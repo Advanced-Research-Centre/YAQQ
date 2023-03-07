@@ -105,10 +105,7 @@ Ref: qiskit\transpiler\passes\synthesis\solovay_kitaev_synthesis.py
 def equivalent_decomposition(qc,gs):
     max_depth = 3 # maximum number of same consequetive gates allowed
     recursion_degree = 3 # larger recursion depth increases the accuracy and length of the decomposition
-    agent_approximations = generate_basic_approximations(gs, max_depth) 
-    #print(gs)
-    #for i in agent_approximations:
-    #    print(i.name)
+    agent_approximations = generate_basic_approximations(gs, max_depth)
     skd = SolovayKitaev(recursion_degree=recursion_degree,basic_approximations=agent_approximations)
     return skd(qc)
 
@@ -187,30 +184,32 @@ class BGate(Gate):
 
 class UdgGate(Gate):
     U = np.identity(2)
+    label = ""
     def __init__(self, label, unitary):
         self.U = unitary
+        self.label = label
         """Create new gate."""
         super().__init__(label, 1, [], label=label)
     def inverse(self):
         """Invert this gate."""
-        return UGate("U", self.U)  # self-inverse
+        return UGate(self.label[:-2], self.U)  # self-inverse
     def __array__(self, dtype=None):
-        """Return a numpy.array for the Ua gate."""
+        """Return a numpy.array for the Udg gate."""
         return la.inv(self.U)
 
 class UGate(Gate):
     U = np.identity(2)
+    label = ""
     def __init__(self, label, unitary):
         self.U = unitary
+        self.label = label
         """Create new gate."""
         super().__init__(label, 1, [], label=label)
     def inverse(self):
-        # print(22222)
         """Invert this gate."""
-        return UdgGate('dg', self.U)  # self-inverse
+        return UdgGate(self.label+'dg', self.U)  # self-inverse
     def __array__(self, dtype=None):
-        # print(11111)
-        """Return a numpy.array for the Ua gate."""
+        """Return a numpy.array for the U gate."""
         return self.U
         
 if __name__ == "__main__":
@@ -235,14 +234,20 @@ if __name__ == "__main__":
     # Make gatesets
     agent_prelim_gateset = [t, h, tdg]
     
-    points = 10
+    points = 20
     rz_ang_list, rx_ang_list = fibo_bloch(points)[0], fibo_bloch(points)[1]
-    
-    for _ in range(100):
-        agent_proposed_gateset = [Ua, Ua, Ua]
-        # result_db = []
+    gateset_list, total_fid_list, total_depth_list = [],[],[]
+    best = 1e-4
+    for _ in range(50):
+        unitary1, unitary2, unitary3 = random_unitary(2).data, random_unitary(2).data, random_unitary(2).data
+        U1 = UGate("U1", unitary1)
+        U2 = UGate("U2", unitary2)
+        U3 = UGate("U3", unitary3)
+        agent_proposed_gateset = [U1, U2, U3]
         universal_fid = 0
         proposed_fid = 0
+        fid_list = []
+        depth_list = []
         for p in range(points):
             qc0 = QuantumCircuit(1)
             qc0.rz(rz_ang_list[p],0)
@@ -256,18 +261,20 @@ if __name__ == "__main__":
             pf02 = process_fidelity(choi0,choi02)
             universal_fid += pf01
             proposed_fid += pf02
-            # result_db.append([qc01.depth(),qc02.depth(),pf01,pf02])
+            fid_list.append([pf01,pf02])
+            depth_list.append([qc01.depth(),qc02.depth()])
+        
+        gateset_list.append([unitary1,unitary2, unitary3])
+        total_fid_list.append(fid_list)
+        total_depth_list.append(depth_list)
+
         universal_fid /= points
         proposed_fid /= points
         cost_function = np.abs(universal_fid - proposed_fid)
-        print(cost_function)
-    # y1,y2 = [],[]
-    # for i in result_db:
-    #     y1.append(i[2])
-    #     y2.append(i[3])
-
-    # plt.plot(y1, '-x', label = "[t, h, tdg]")
-    # plt.plot(y2, '-o', label = "[b, h, tdg]")
-    # plt.ylim((0,1))
-    # plt.legend()
-    # plt.show()
+        # if cost_function <= best:
+        #     break
+        
+    
+    np.save( 'data/total_depth_list', total_depth_list )
+    np.save( 'data/total_fid_list', total_fid_list )
+    np.save( 'data/gateset_list', gateset_list )

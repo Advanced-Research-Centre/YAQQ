@@ -6,7 +6,6 @@ import qiskit.circuit.library.standard_gates as gates
 from qiskit.circuit import Gate
 from qiskit.quantum_info.operators.predicates import matrix_equal
 from qiskit.synthesis.discrete_basis.gate_sequence import GateSequence
-import numpy as np
 from qiskit.transpiler.passes.synthesis import SolovayKitaev
 from qiskit.quantum_info import process_fidelity, Choi
 from astropy.coordinates import cartesian_to_spherical
@@ -121,13 +120,15 @@ class BGate(Gate):
         
 class UdgGate(Gate):
     U = np.identity(2)
+    label = ""
     def __init__(self, label, unitary):
         self.U = unitary
+        self.label = label
         """Create new gate."""
         super().__init__(label, 1, [], label=label)
     def inverse(self):
         """Invert this gate."""
-        return UGate("U", self.U)  # self-inverse
+        return UGate(self.label[:-2], self.U)  # self-inverse
     def __array__(self, dtype=None):
         """Return a numpy.array for the Udg gate."""
         return la.inv(self.U)

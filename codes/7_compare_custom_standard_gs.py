@@ -66,6 +66,8 @@ class gen_basis_seq:
         basis = []
         for gate in basis_gates:
             basis.append(gate.name)
+            # print(gate.label, gate.name)
+            # exit()
             self._1q_gates[gate.label] = gate
         tree = self.Node((), GateSequence(), [])
         cur_level = [tree]
@@ -90,7 +92,7 @@ class TGate(Gate):
         return TdgGate(label="tdg")  # self-inverse
     def __array__(self, dtype=None):
         """Return a numpy.array for the b gate."""
-        return np.array([[1, 0], [0, (1+1j)/np.sqrt(2)]], dtype=dtype)
+        return np.array([[1, 0], [0, (1+1j)/np.sqrt(2)]], dtype=complex)
         
 class TdgGate(Gate):
     def __init__(self, label):
@@ -101,18 +103,18 @@ class TdgGate(Gate):
         return TGate(label="t")  # self-inverse
     def __array__(self, dtype=None):
         """Return a numpy.array for the b gate."""
-        return np.array([[1, 0], [0, (1-1j)/np.sqrt(2)]], dtype=dtype)
+        return np.array([[1, 0], [0, (1-1j)/np.sqrt(2)]], dtype=complex)
         
 class HGate(Gate):
     def __init__(self, label):
         """Create new gate."""
-        super().__init__("h", 1, [], label=label)
+        super().__init__("balchal", 1, [], label=label)
     def inverse(self):
         """Invert this gate."""
-        return HGate(label="h")  # self-inverse
+        return HGate(label="bal")  # self-inverse
     def __array__(self, dtype=None):
         """Return a numpy.array for the b gate."""
-        return np.array([[1, 1], [1, -1]], dtype=dtype) / np.sqrt(2)
+        return np.array([[1, 1], [1, -1]], dtype=complex) / np.sqrt(2)
  
 class BGate(Gate):
     def __init__(self, label):
@@ -123,17 +125,19 @@ class BGate(Gate):
         return BGate(label="b")  # self-inverse
     def __array__(self, dtype=None):
         """Return a numpy.array for the b gate."""
-        return np.array([[0, 1], [1, 0]], dtype=dtype)
+        return np.array([[0, 1], [1, 0]], dtype=complex)
         
 class UdgGate(Gate):
     U = np.identity(2)
+    label = ""
     def __init__(self, label, unitary):
         self.U = unitary
+        self.label = label
         """Create new gate."""
         super().__init__(label, 1, [], label=label)
     def inverse(self):
         """Invert this gate."""
-        return UGate("U", self.U)  # self-inverse
+        return UGate(self.label[:-2], self.U)  # self-inverse
     def __array__(self, dtype=None):
         """Return a numpy.array for the Udg gate."""
         return la.inv(self.U)
@@ -181,7 +185,7 @@ if __name__ == "__main__":
     
     t = TGate(label="t")
     tdg = TdgGate(label="tdg")
-    h = HGate(label="h")
+    h = HGate(label="balchal")
     b = BGate(label="b")
     
     # unitary = random_unitary(2).data
@@ -200,15 +204,15 @@ if __name__ == "__main__":
     agent2_gateset = [Uh, Ut, Utdg]
 
     print("H gate:")
-    print(agent1_gateset[0].__array__())
-    print(agent2_gateset[0].__array__())
+    print(agent1_gateset[1].__array__())
+    print(agent2_gateset[2].__array__())
     print("T gate:")
     print(agent1_gateset[1].__array__())
     print(agent2_gateset[1].__array__())
     print("Tdg gate:")
     print(agent1_gateset[2].__array__())
     print(agent2_gateset[2].__array__())
-    
+    # exit()
     gbs = gen_basis_seq()
     max_depth = 3 # maximum number of same consequetive gates allowed
     agent1_gateseq = gbs.generate_basic_approximations(agent1_gateset, max_depth) 
@@ -242,6 +246,11 @@ if __name__ == "__main__":
         choi0 = Choi(qc0)
         choi01 = Choi(qc01)
         choi02 = Choi(qc02)
+        # print(choi0)
+        # print(choi01)
+        # print(choi02)
+        print(process_fidelity(choi0,choi01), process_fidelity(choi0,choi02))
+        # exit()
         fid_gs01.append(process_fidelity(choi0,choi01))
         fid_gs02.append(process_fidelity(choi0,choi02))
         len_gs01.append(qc01.depth())
