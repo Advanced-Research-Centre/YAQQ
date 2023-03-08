@@ -2,7 +2,7 @@
 
 An agent that searches for novel quantum universal gate set.
 
-It has primary motivation:
+It has the following motivations:
 1. given a gate set, and a set of quantum circuits, find another gate set that may perform similar/better on average, but better for a subset of those circuits
 2. given a set of noisy gates fabricated on a quantum processor, treat them as non-noisy and compile algorithms with that set. the noisy gates are first purified (i.e. should be unitary, but not the desired one, so it does not solve the problem of depolarizing)
 
@@ -29,7 +29,7 @@ It has primary motivation:
 Feel free to report issues during build or execution. We also welcome suggestions to improve the performance of this application.
 
 ### Citation:
-If you find the code or trained models useful, please consider citing:
+If you find the tool useful, please consider citing:
 
 ```
 @misc{YAQQ,
