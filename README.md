@@ -24,6 +24,12 @@ It has the following motivations:
 6. See if tradeoff exists between gate set size and 2 scores
 7. Bloch sphere states using hierarchical hex mesh (e.g. [H3: Uber's Hexagonal Hierarchical Spatial Index](https://github.com/uber/h3))
 8. Allow biases resource score, i.e. each gate in set can have a different cost (e.g. runtime on a QC)
+9. Use U3 to produce points for benchmarking
+10. Tuning hyperparameters of cost function.
+11. Different optimizers.
+12. Investigate function evaluations of optimizers.
+13. Solovay Kiteav decomposition of higher number of qubits (>1).
+14. Lekhar porjay chole eseche (Write paper).
 
 ### Contributing:
 Feel free to report issues during build or execution. We also welcome suggestions to improve the performance of this application.

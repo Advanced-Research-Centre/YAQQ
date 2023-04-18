@@ -183,7 +183,7 @@ def cfn_calc(fid_gs01,dep_gs01,fid_gs02,dep_gs02):
     avg_dep_gs02 = np.mean(dep_gs02)
     dist_fid_avg = avg_fid_gs01 - avg_fid_gs02
     dist_dep_avg = avg_dep_gs02 - avg_dep_gs01
-    w_trend, w_favg, w_davg = 1, 1, 1
+    w_trend, w_favg, w_davg = 0, 1000, 1
     cfn = w_trend*dist_fid + w_favg*dist_fid_avg + w_davg*dist_dep_avg
     return cfn
 
@@ -194,16 +194,16 @@ def qiskit_U3(theta, lamda, phi):
                         [np.exp(1j*phi)*np.sin(theta/2), np.exp(1j*(lamda+phi))*np.cos(theta/2)]])
     return mat
 
-def cost_func(points, agent1_gateset, U1, U2, thetas, max_depth, recursion_degree):
-    theta1, theta2, theta3 = thetas[0], thetas[1], thetas[2]
+def cost_func(points, agent1_gateset, thetas, max_depth, recursion_degree):
     ## UNIVERSAL SET ##
     gbs = gen_basis_seq()
     agent1_gateseq = gbs.generate_basic_approximations(agent1_gateset, max_depth) 
     skd1 = SolovayKitaev(recursion_degree=recursion_degree,basic_approximations=agent1_gateseq)
 
     ## OUR SEARCHED SET ##
-    U3 = UGate("U3", qiskit_U3(theta1, theta2, theta3))
-    agent2_gateset = [U1, U2, U3]
+    U3a = UGate("U3a", qiskit_U3(thetas[0], thetas[1], thetas[2]))
+    U3b = UGate("U3b", qiskit_U3(thetas[3], thetas[4], thetas[5]))
+    agent2_gateset = [U3a, U3b]
     agent2_gateseq = gbs.generate_basic_approximations(agent2_gateset, max_depth) 
     skd2 = SolovayKitaev(recursion_degree=recursion_degree,basic_approximations=agent2_gateseq) 
 
@@ -345,8 +345,8 @@ def compare_gs():
 def novel_gs_with_scipy():
     
     # ===> Make trial states on Bloch sphere
-    points = 3
-    rz_ang_list, rx_ang_list = fibo_bloch(points)[0], fibo_bloch(points)[1]   
+    points = 10
+    # rz_ang_list, rx_ang_list = fibo_bloch(points)[0], fibo_bloch(points)[1]
 
     # ===> Define gateset GS1 (standard gates via U-gate)
     h_U_mat = np.array([[1, 1], [1, -1]], dtype=complex) / np.sqrt(2)
@@ -357,16 +357,18 @@ def novel_gs_with_scipy():
     Utdg = UGate("Utdg", tdg_U_mat)
     agent1_gateset = [Uh, Ut, Utdg]
 
-    trials, max_depth, recursion_degree = 5, 3, 2
+    trials, max_depth, recursion_degree = 10, 3, 2
 
     def cost_to_optimize(thetas):
-        return cost_func(points, agent1_gateset, Uh, Ut, thetas, max_depth=max_depth, recursion_degree=recursion_degree)
+        return cost_func(points, agent1_gateset, thetas, max_depth=max_depth, recursion_degree=recursion_degree)
+    
     cost_list, ang_list = [], []
-
     for _ in range(trials):
-        initial_guess = np.random.random(3)
-        print(cost_to_optimize(initial_guess))
-        res = minimize(cost_to_optimize, initial_guess, method = 'COBYLA', options={'maxiter': 1000})
+        initial_guess = np.random.random(2*3)
+        print('cost age:', cost_to_optimize(initial_guess))
+        res = minimize(cost_to_optimize, initial_guess, method = 'COBYLA', options={'maxiter': 200})
+        print('cost pore:', res.fun)
+
         cost_list.append(res['fun'])
         ang_list.append(res['x'])
     
@@ -375,9 +377,86 @@ def novel_gs_with_scipy():
 
     return
 
+def compare_gs_scipy():
+
+    h_U_mat = np.array([[1, 1], [1, -1]], dtype=complex) / np.sqrt(2)
+    t_U_mat = np.array([[1, 0], [0, (1+1j)/np.sqrt(2)]], dtype=complex)
+    tdg_U_mat = np.array([[1, 0], [0, (1-1j)/np.sqrt(2)]], dtype=complex)
+    Uh = UGate("Uh", h_U_mat)
+    Ut = UGate("Ut", t_U_mat)
+    Utdg = UGate("Utdg", tdg_U_mat)
+    agent1_gateset = [Uh, Ut, Utdg]
+    opt_angle_novel_gs = np.load('opt_ang.npy')
+    theta1, theta2, theta3 =  opt_angle_novel_gs[0], opt_angle_novel_gs[1], opt_angle_novel_gs[2]
+    theta4, theta5, theta6 =  opt_angle_novel_gs[3], opt_angle_novel_gs[4], opt_angle_novel_gs[5]
+    U3a = UGate("U3a", qiskit_U3(theta1, theta2, theta3))
+    U3b = UGate("U3b", qiskit_U3(theta4, theta5, theta6))
+    agent2_gateset = [U3a, U3b]
+
+    gbs = gen_basis_seq()
+    max_depth = 3
+    agent1_gateseq = gbs.generate_basic_approximations(agent1_gateset, max_depth)
+    agent2_gateseq = gbs.generate_basic_approximations(agent2_gateset, max_depth)
+
+    points = 10
+    rz_ang_list, rx_ang_list = fibo_bloch(points)[0], fibo_bloch(points)[1]   
+
+    # ===> SK Decompose trail states for both gate sets and calculate fidelity/length
+
+    # ===> Declare SKT object
+    
+    recursion_degree = 3 # larger recursion depth increases the accuracy and length of the decomposition
+    skd1 = SolovayKitaev(recursion_degree=recursion_degree,basic_approximations=agent1_gateseq)    
+    skd2 = SolovayKitaev(recursion_degree=recursion_degree,basic_approximations=agent2_gateseq) 
+    
+    fid_gs01 = []
+    fid_gs02 = []
+    len_gs01 = []
+    len_gs02 = []
+
+    for p in range(points):
+        qc0 = QuantumCircuit(1)
+        qc0.rz(rz_ang_list[p],0)
+        qc0.rx(rx_ang_list[p],0)
+        qc01 = skd1(qc0)
+        qc02 = skd2(qc0)
+        choi0 = Choi(qc0)
+        choi01 = Choi(qc01)
+        choi02 = Choi(qc02)
+        fid_gs01.append(process_fidelity(choi0,choi01))
+        fid_gs02.append(process_fidelity(choi0,choi02))
+        len_gs01.append(qc01.depth())
+        len_gs02.append(qc02.depth())
+
+    # ===> Plot results
+    
+    _, ax = plt.subplots(1, 2, figsize = (7,3.5), sharex=True, layout="constrained")
+
+    ax[0].plot(fid_gs01, '-x', label = "[h, t, tdg]")
+    ax[0].plot(fid_gs02, '-o', label = "[U3a, U3b]")
+    ax[1].plot(len_gs01, '-x', label = "[h, t, tdg]")
+    ax[1].plot(len_gs02, '-o', label = "[U3a, U3b]")
+    
+    ax[0].set_ylabel("Process Fidelity")
+    ax[1].set_ylabel("Decomposed Circuit Length")
+    ax[0].set_xlabel("Equidistant Points")
+    ax[1].set_xlabel("Equidistant Points")
+    ax[0].set_ylim(bottom=0,top=1)
+    ax[1].set_ylim(bottom=0,top=None)
+    plt.legend(ncol = 2, bbox_to_anchor = (1, 1.13))
+    plt.savefig('figures/lok_dekhano_plot.pdf')
+    plt.savefig('figures/lok_dekhano_plot.png')
+    
+    plt.show()
+
+
 ####################################################################################################        
 
 if __name__ == "__main__":
+    # novel_gs_with_scipy()
+    # exit()
+    compare_gs_scipy()
+    exit()
     # h_U_mat = np.array([[1, 1], [1, -1]], dtype=complex) / np.sqrt(2)
     # t_U_mat = np.array([[1, 0], [0, (1+1j)/np.sqrt(2)]], dtype=complex)
     # tdg_U_mat = np.array([[1, 0], [0, (1-1j)/np.sqrt(2)]], dtype=complex)
