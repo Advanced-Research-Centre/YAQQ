@@ -82,15 +82,15 @@ def cfn_calc(fid_gs01,dep_gs01,fid_gs02,dep_gs02):
     avg_dep_gs01 = np.mean(dep_gs01)
     avg_fid_gs02 = np.mean(fid_gs02)
     avg_dep_gs02 = np.mean(dep_gs02)
-    dist_fid_avg = avg_fid_gs01 - avg_fid_gs02
-    dist_dep_avg = avg_dep_gs02 - avg_dep_gs01
-    w_trend, w_favg, w_davg = 0, 1000, 1
+    dist_fid_avg = - avg_fid_gs02   # avg_fid_gs01 - avg_fid_gs02
+    dist_dep_avg = avg_dep_gs02     # avg_dep_gs02 - avg_dep_gs01
+    w_trend, w_favg, w_davg = 200, 1000, 1
     cfn = w_trend*dist_fid + w_favg*dist_fid_avg + w_davg*dist_dep_avg
     return cfn
 
 ####################################################################################################
  
-def novel_gs_rand():
+def novel_gs_rand_randS():
     
     # ===> Make trial states on Bloch sphere
     
@@ -252,7 +252,8 @@ def fidelity_per_point(rzrx, skd1, skd2):
     return pf01_db, dep01_db, pf02_db, dep02_db
 
 
-def rand_decompose(qb,randU,gs1,trials,depth):
+def rand_decompose(qb,randU,gs,trials,depth):
+    # Given an unitary and a gate set, use trials to find a circuit using the gate set that is close to the unitary
     qc0 = QuantumCircuit(qb)
     qc0.append(randU, [0])
     choi0 = Choi(qc0)
@@ -260,25 +261,31 @@ def rand_decompose(qb,randU,gs1,trials,depth):
     pfi_best = 0
     # qcirc_best = []
     for i in range(trials):
-        seq = random.choices(list(gs1.keys()),k=depth)
+        seq = random.choices(list(gs.keys()),k=depth)
         qc0 = QuantumCircuit(qb)
         for i in seq:
-            if i == 'h':
-                qc0.h(0)
-            elif i == 't':
-                qc0.t(0)
-            elif i == 'h0':
-                qc0.h(0)
-            elif i == 'h1':
-                qc0.h(1)
-            elif i == 't0':
-                qc0.t(0)
-            elif i == 't1':
-                qc0.t(1)
-            elif i == 'cx01':
-                qc0.cx(0,1)
-            elif i == 'cx10':
-                qc0.cx(1,0)
+            qc0.append(gs[i], [0])
+
+            # need to handle for 2 qubit
+
+            # if i == 'h':
+            #     qc0.h(0)
+            # elif i == 't':
+            #     qc0.t(0)
+            # elif i == 'h0':
+            #     qc0.h(0)
+            # elif i == 'h1':
+            #     qc0.h(1)
+            # elif i == 't0':
+            #     qc0.t(0)
+            # elif i == 't1':
+            #     qc0.t(1)
+            # elif i == 'cx01':
+            #     qc0.cx(0,1)
+            # elif i == 'cx10':
+            #     qc0.cx(1,0)
+            # else:   # for custom gates
+            #     qc0.append(gs[i], [0])
         choi01 = Choi(qc0)
         pfi = process_fidelity(choi0,choi01)
         if pfi > pfi_best:
@@ -289,37 +296,96 @@ def rand_decompose(qb,randU,gs1,trials,depth):
 
 ####################################################################################################
  
-def novel_gs_rand():
+def novel_gs_rand_randU():
     
     # ===> Make test set
-    points = 50
+    points = 25
     testset = gen_testset(points, 1)
 
     # ===> Define gateset GS1 (standard gates via U-gate)
     h_U_mat = np.array([[1, 1], [1, -1]], dtype=complex) / np.sqrt(2)
     t_U_mat = np.array([[1, 0], [0, (1+1j)/np.sqrt(2)]], dtype=complex)
     gs1 = {}
-    gs1['h'] = UnitaryGate(h_U_mat,label='Uh')
-    gs1['t'] = UnitaryGate(t_U_mat,label='Ut')
-    
-    print(gs1.keys())
-    seq = random.choices(list(gs1.keys()),k=10)
-    # list(set(t) - set(s))
-    qcirc1_best = []
-    fid1_best = []
-    for randU in testset:
-        fid1_best.append(rand_decompose(1,randU,gs1,trials=50,depth=10))
+    gs1['H'] = UnitaryGate(h_U_mat,label='Uh')
+    gs1['T'] = UnitaryGate(t_U_mat,label='Ut')
+    gs1_gates = ','.join(list(gs1.keys()))
+    # gs1_U1, gs1_U2, gs1_U3 = random_unitary(2).data, random_unitary(2).data, random_unitary(2).data
+    # gs1['U1'] = UnitaryGate(gs1_U1,label='U1')
+    # gs1['U2'] = UnitaryGate(gs1_U2,label='U2')
+    # gs1['U3'] = UnitaryGate(gs1_U3,label='U3')
 
-    _, ax = plt.subplots(1, 1)
-    ax.plot(fid1_best, '-x', color = 'r', label = 'PF [uh, ut, utdg]')
-    ax.set_ylabel("Process Fidelity")
-    ax.set_ylim(bottom=0,top=1)
-    ax.legend()
-    plt.show()
+    # ===> Decompose each randU with GS1 using random decomposition and store fid and depth
+    depth = 20
+    pf01_db, dep01_db = [], []
+    for randU in testset:
+        pf01_db.append(rand_decompose(1,randU,gs1,trials=50,depth=depth))
+        dep01_db.append(depth)
+
+    # ===> Find complementary gate set via random search
+
+    trials = 50
+    cfn_best, cfn_best_db = 100000, []
+    # gateset_list, total_fid_list, total_depth_list = [], [], []
+    for t in tqdm(range(trials)):
+
+        # ===> Generate random unitaries for GS2
+        
+        gs2_U1, gs2_U2, gs2_U3 = random_unitary(2).data, random_unitary(2).data, random_unitary(2).data
+        gs2 = {}
+        gs2['U1'] = UnitaryGate(gs2_U1,label='U1')
+        gs2['U2'] = UnitaryGate(gs2_U2,label='U2')
+        gs2_gates = ','.join(list(gs2.keys()))
+        # gs2['U3'] = UnitaryGate(gs2_U3,label='U3')
+
+        # ===> Decompose each randU with GS2
+       
+        pf02_db, dep02_db = [], []
+        for randU in testset:
+            pf02_db.append(rand_decompose(1,randU,gs2,trials=50,depth=depth))
+            dep02_db.append(depth)
+
+        # ===> Evaluate GS2 based on cost function
+        
+        cfn = cfn_calc(pf01_db, dep01_db, pf02_db, dep02_db)
+        if cfn <= cfn_best:
+            cfn_best = cfn
+            cfn_best_db = [[gs2_U1, gs2_U2, gs2_U3],pf02_db,dep02_db]
+    
+    print("Best settings found:",cfn_best_db[0])
+
+    ivt_fid_gs01 = np.subtract(1,pf01_db)
+    avg_fid_gs01 = np.mean(pf01_db)         # Not same for ivt_fid_gs01 and pf01_db
+    avg_fid_best = np.mean(cfn_best_db[1])
+    avg_dep_gs01 = np.mean(dep01_db)
+    avg_dep_best = np.mean(cfn_best_db[2])    
+        
+    plot_data = input("Plot data? [y/n]: ")
+    if plot_data == 'y':
+        _, ax = plt.subplots(1, 2)
+        ax[0].plot(pf01_db, '-x', color = 'r', label = 'PF ['+gs1_gates+']')
+        ax[0].plot(ivt_fid_gs01, '-x', color = 'g', label = 'target PF trend')
+        ax[0].plot(cfn_best_db[1], '-o', color = 'b', label = 'PF ['+gs2_gates+']')
+
+        ax[0].axhline(y=avg_fid_gs01, linestyle='-.', color = 'r' , label = 'avg.PF ['+gs1_gates+']')
+        ax[0].axhline(y=avg_fid_best, linestyle='-.', color = 'b' , label = 'avg.PF ['+gs2_gates+']')
+
+        ax[1].plot(dep01_db, '-x', color = 'r', label = 'CD ['+gs1_gates+']')
+        ax[1].plot(cfn_best_db[2], '-o', color = 'b', label = 'CD ['+gs2_gates+']')
+
+        ax[1].axhline(y=avg_dep_gs01, linestyle='-.', color = 'r', label = 'avg.CD ['+gs1_gates+']')
+        ax[1].axhline(y=avg_dep_best, linestyle='-.', color = 'b', label = 'avg.CD ['+gs2_gates+']')
+
+        ax[0].set_ylabel("Process Fidelity")
+        ax[1].set_ylabel("Circuit Depth")
+        ax[0].set_ylim(bottom=0,top=1)
+        ax[1].set_ylim(bottom=0,top=None)
+        ax[0].legend()
+        ax[1].legend()
+        plt.show()
 
 ####################################################################################################
 
-def cost_func_rand(testset, gs1, thetas, depth=10):
+def cost_func_randU(testset, gs1, thetas, depth=10):
  
     ## ===> New set
 
@@ -345,8 +411,7 @@ def cost_func_rand(testset, gs1, thetas, depth=10):
 
 ####################################################################################################
 
-def novel_gs_scipy_rand():
-    # ei ta te korchi
+def novel_gs_scipy_randU():
 
     # ===> Make test set
     points = 5
@@ -359,25 +424,30 @@ def novel_gs_scipy_rand():
     gs1['h'] = UnitaryGate(h_U_mat,label='Uh')
     gs1['t'] = UnitaryGate(t_U_mat,label='Ut')
 
-    trials  = 2
+    trials  = 10
 
     def cost_to_optimize(thetas):
-        return cost_func_rand(testset, gs1, thetas, depth=10)
+        return cost_func_randU(testset, gs1, thetas, depth=10)
     
     cost_list, ang_list = [], []
     for _ in range(trials):
         initial_guess = np.random.random(2*3)
-        print('cost age:', cost_to_optimize(initial_guess))
-        res = minimize(cost_to_optimize, initial_guess, method = 'COBYLA', options={'maxiter': 100})
-        print('cost pore:', res.fun)
-
-        cost_list.append(res['fun'])
-        ang_list.append(res['x'])
+        initial_cost = cost_to_optimize(initial_guess)
+        print('Cost of initial random guess of GS:', initial_cost)
+        res = minimize(cost_to_optimize, initial_guess, method = 'L-BFGS-B', options={'maxiter': 100})
+        print('Cost of optimized GS:', res.fun)
+        if res['fun'] < initial_cost:
+            cost_list.append(res['fun'])
+            ang_list.append(res['x'])
+        else:
+            cost_list.append(initial_cost)
+            ang_list.append(initial_guess)
     
-    sort_opt_ang = ang_list[ cost_list.index(np.min(cost_list)) ]
+    best_GS = cost_list.index(np.min(cost_list))
+    sort_opt_ang = ang_list[best_GS]
     np.save('opt_ang_rand', sort_opt_ang)
 
-    print(cost_list)
+    print("\nAngles of best GS found:",ang_list[best_GS], "with cost",cost_list[best_GS])
 
     
     # _, ax = plt.subplots(1, 1)
@@ -391,7 +461,7 @@ def novel_gs_scipy_rand():
 
 ####################################################################################################
  
-def novel_gs_scipy():
+def novel_gs_scipy_randS():
     
     # ===> Make trial states on Bloch sphere
     points = 10
@@ -414,9 +484,9 @@ def novel_gs_scipy():
     cost_list, ang_list = [], []
     for _ in range(trials):
         initial_guess = np.random.random(2*3)
-        print('cost age:', cost_to_optimize(initial_guess))
+        print('Cost of initial random guess of GS:', cost_to_optimize(initial_guess))
         res = minimize(cost_to_optimize, initial_guess, method = 'COBYLA', options={'maxiter': 200})
-        print('cost pore:', res.fun)
+        print('Cost of optimized GS:', res.fun)
 
         cost_list.append(res['fun'])
         ang_list.append(res['x'])
@@ -517,16 +587,17 @@ def compare_gs():
 
 if __name__ == "__main__":
 
-    novel_gs_scipy_rand()
-    exit()
-
     print("Option 1: Compare and plot gate sets GS1 and GS2")
-    print("Option 2: Generate complementary gate set of GS1 using random search")
-    print("Option 3: Generate complementary gate set of GS1 using scipy")
-    yaqq_mode = input("Enter choice: ")
+    print("Option 2: Generate complementary gate set of GS1 using random search for randS") # SKT
+    print("Option 3: Generate complementary gate set of GS1 using random search for randU")
+    print("Option 4: Generate complementary gate set of GS1 using scipy for randS") # RandDecomposition
+    print("Option 5: Generate complementary gate set of GS1 using scipy for randU") # RandDecomposition
+    yaqq_mode = input("===> Enter choice: ")
     match yaqq_mode:
         case '1': compare_gs()
-        case '2': novel_gs_rand()
-        case '3': novel_gs_scipy()
+        case '2': novel_gs_rand_randS()
+        case '3': novel_gs_rand_randU()
+        case '4': novel_gs_scipy_randS()
+        case '5': novel_gs_scipy_randU()
         case _  : print("Invalid option")
     print("\nThank you for using YAQQ.")
