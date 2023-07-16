@@ -41,7 +41,7 @@ If you find the tool useful, please consider citing:
 @misc{YAQQ,
   author={Sarkar, Aritra and Kundu, Akash and Feld, Sebastian},
   title={YAQQ: Yet Another Quantum Quantizer},
-  howpublished={\url{https://github.com/}},
+  howpublished={\url{[https://github.com/Advanced-Research-Centre/YAQQ](https://github.com/Advanced-Research-Centre/YAQQ)}},
   year={2023}
 }
 ```
