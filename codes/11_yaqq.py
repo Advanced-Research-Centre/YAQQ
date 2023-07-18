@@ -20,7 +20,7 @@ from astropy.coordinates import cartesian_to_spherical
 from qiskit import QuantumCircuit
 import matplotlib.pyplot as plt
 import math
-from qiskit.extensions import UnitaryGate, U3Gate
+from qiskit.extensions import UnitaryGate, U3Gate, UGate
 from qiskit.circuit import Gate
 from qiskit.quantum_info import random_unitary
 import scipy.linalg as la
@@ -395,7 +395,6 @@ def cost_func_randU(testset, gs1, thetas, depth=10):
     gs2['u3a'] = UnitaryGate(U3a_mat,label='U3a')
     gs2['u3b'] = UnitaryGate(U3b_mat,label='U3b')
 
-    decompose_trials = 10
     pf01_db, dep01_db = [], [10]*5
     pf02_db, dep02_db = [], [10]*5
 
@@ -405,17 +404,21 @@ def cost_func_randU(testset, gs1, thetas, depth=10):
 
     # ===> Evaluate GS2 based on cost function
     cfn = cfn_calc(pf01_db, dep01_db, pf02_db, dep02_db)
-    return cfn
+    return cfn, pf01_db, pf02_db
 
   
 
 ####################################################################################################
 
 def novel_gs_scipy_randU():
+    """
+    ADGHRFRGFDRETHNJGDEGHBBGHXNZ
+    """
 
     # ===> Make test set
     points = 5
     testset = gen_testset(points, 1)
+    cfn_best, cfn_best_db = 100000, []
 
     # ===> Define gateset GS1 (standard gates via U-gate)
     h_U_mat = np.array([[1, 1], [1, -1]], dtype=complex) / np.sqrt(2)
@@ -424,38 +427,73 @@ def novel_gs_scipy_randU():
     gs1['h'] = UnitaryGate(h_U_mat,label='Uh')
     gs1['t'] = UnitaryGate(t_U_mat,label='Ut')
 
-    trials  = 10
+    # ===> Decompose each randU with GS1 using random decomposition and store fid and depth
+    depth = 5
+    pf01_db, pf02_db = [], []
+
+    trials  = 3
 
     def cost_to_optimize(thetas):
-        return cost_func_randU(testset, gs1, thetas, depth=10)
+        cost, pf01, pf02 = cost_func_randU(testset, gs1, thetas, depth=depth)
+        return cost
     
     cost_list, ang_list = [], []
     for _ in range(trials):
         initial_guess = np.random.random(2*3)
         initial_cost = cost_to_optimize(initial_guess)
         print('Cost of initial random guess of GS:', initial_cost)
-        res = minimize(cost_to_optimize, initial_guess, method = 'L-BFGS-B', options={'maxiter': 100})
+        res = minimize(cost_to_optimize, initial_guess, method = 'COBYLA', options={'maxiter': 50})
         print('Cost of optimized GS:', res.fun)
+        cost, ang = 0, 0
         if res['fun'] < initial_cost:
-            cost_list.append(res['fun'])
-            ang_list.append(res['x'])
+            cost = res['fun']
+            ang = res['x']
         else:
-            cost_list.append(initial_cost)
-            ang_list.append(initial_guess)
+            cost = initial_cost
+            ang = initial_guess
+        
+        cost_list.append(cost)
+        ang_list.append(ang)   
     
     best_GS = cost_list.index(np.min(cost_list))
     sort_opt_ang = ang_list[best_GS]
     np.save('opt_ang_rand', sort_opt_ang)
 
-    print("\nAngles of best GS found:",ang_list[best_GS], "with cost",cost_list[best_GS])
+    # bana tera gs2 
+    U3a_mat = qiskit_U3(sort_opt_ang[0], sort_opt_ang[1], sort_opt_ang[2])
+    U3b_mat = qiskit_U3(sort_opt_ang[3], sort_opt_ang[4], sort_opt_ang[5])
+    gs2 = {}    
+    gs2['u3a'] = UnitaryGate(U3a_mat,label='U3a')
+    gs2['u3b'] = UnitaryGate(U3b_mat,label='U3b')
 
+    pf02_db, pf01_db = [], []
+    for randU in testset:
+        pf02_db.append(rand_decompose(1,randU,gs2,trials=50,depth=depth))
+        pf01_db.append(rand_decompose(1,randU,gs1,trials=50,depth=depth))
     
-    # _, ax = plt.subplots(1, 1)
-    # ax.plot(fid1_best, '-x', color = 'r', label = 'PF [uh, ut, utdg]')
-    # ax.set_ylabel("Process Fidelity")
-    # ax.set_ylim(bottom=0,top=1)
-    # ax.legend()
-    # plt.show()
+
+    print("\nAngles of best GS found:",sort_opt_ang, "with cost",cost_list[best_GS])
+
+    ivt_fid_gs01 = np.subtract(1,pf01_db)
+    avg_fid_gs01 = np.mean(pf01_db)
+    avg_fid_best = np.mean(pf02_db)   
+        
+    plot_data = input("Plot data? [y/n]: ")
+    if plot_data == 'y':
+
+
+        _, ax = plt.subplots(1, 2)
+        ax[0].plot(pf01_db, '-x', color = 'r', label = 'PF [gs1_gates]')
+        ax[0].plot(ivt_fid_gs01, '-x', color = 'g', label = 'target PF trend')
+        ax[0].plot(pf02_db, '-o', color = 'b', label = 'PF [+gs2_gates+]')
+
+        ax[0].axhline(y=avg_fid_gs01, linestyle='-.', color = 'r' , label = 'avg.PF [+gs1_gates+]')
+        ax[0].axhline(y=avg_fid_best, linestyle='-.', color = 'b' , label = 'avg.PF [+gs2_gates+]')
+
+        ax[0].set_ylabel("Process Fidelity")
+        ax[0].set_ylim(bottom=0,top=1)
+        ax[0].legend()
+        plt.show()
 
     return
 
@@ -493,6 +531,7 @@ def novel_gs_scipy_randS():
     
     sort_opt_ang = ang_list[ cost_list.index(np.min(cost_list)) ]
     np.save('opt_ang', sort_opt_ang)
+
 
     return
 
