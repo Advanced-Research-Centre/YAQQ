@@ -33,6 +33,7 @@ from qiskit.quantum_info import random_statevector, Statevector, DensityMatrix, 
 from qiskit.visualization import plot_bloch_multivector
 import qutip as qt
 from qutip.measurement import measurement_statistics
+import os
     
 ########################################################################################################################################################################################################
     
@@ -882,7 +883,9 @@ def compare_gs(yaqq_ds_type, ds, yaqq_dcmp):
         gs1_gates = ','.join(list(gs1.keys()))
 
     # ===> Load U3 angles from novel_gs_scipy and Define gateset GS2
-    opt_angle_novel_gs = np.load('../opt_ang.npy')
+    path = os.path.realpath(__file__) # The path of this file
+    dir = os.path.dirname(path)
+    opt_angle_novel_gs = np.load(dir+'\\results\opt_ang.npy')
     if yaqq_dcmp == 1:  # skt
         Ua = UGate("Ua", np.array(qiskit_U3(opt_angle_novel_gs[3], opt_angle_novel_gs[4], opt_angle_novel_gs[5]), dtype=complex))
         Ub = UGate("Ub", np.array(qiskit_U3(opt_angle_novel_gs[0], opt_angle_novel_gs[1], opt_angle_novel_gs[2]), dtype=complex))
@@ -940,7 +943,7 @@ Mode 2: Generative novel GS2 w.r.t. GS1 (in code)
 def generate_gs(yaqq_ds_type, ds, yaqq_dcmp, yaqq_search):
 
     print("To be integrated....")
-    
+
     # novel_gs_rand_randS()
     # novel_gs_rand_randU()
     # novel_gs_scipy_randS()
@@ -955,8 +958,8 @@ if __name__ == "__main__":
     
     devmode = input("\n  ===> Run Default Configuration? [Y/N] (def.: Y): ") or 'Y'
     if devmode == 'Y':
-        # compare_gs(yaqq_ds_type=1,ds=gen_ds_fiboS(samples=2),yaqq_dcmp=1)
-        generate_gs(yaqq_ds_type=1,ds=gen_ds_fiboS(samples=2),yaqq_dcmp=1,yaqq_search=1)
+        compare_gs(yaqq_ds_type=1,ds=gen_ds_fiboS(samples=2),yaqq_dcmp=1)
+        # generate_gs(yaqq_ds_type=1,ds=gen_ds_fiboS(samples=2),yaqq_dcmp=1,yaqq_search=1)
         exit(1)
 
     # Note: Currently YAQQ is configured only for 1 qubit
