@@ -11,7 +11,7 @@ It has the following motivations:
 2. [Solovay-Kitaev theorem](https://en.wikipedia.org/wiki/Solovay%E2%80%93Kitaev_theorem)
 
 ### How to use:
-1. Install dependencies (qiskit, matplotlib, astropy, numpy, scipy)
+1. Install dependencies (python 3.11.4, numpy 1.15.1, qiskit 0.43.3, astropy 5.3.1, matplotlib 3.7.2, scipy 1.11.1)
 2. Navigate to codes folder
 3. >> python 10_yaqq.py
 
