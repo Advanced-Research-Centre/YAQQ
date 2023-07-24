@@ -13,7 +13,7 @@ It has the following motivations:
 ### How to use:
 1. Install dependencies (python 3.11.4, numpy 1.15.1, qiskit 0.43.3, astropy 5.3.1, matplotlib 3.7.2, scipy 1.11.1, tqdm 4.65.0, qutip 4.7.2, scikit-learn 1.3.0)
 2. Navigate to codes folder
-3. >> python 10_yaqq.py
+3. >> python yaqq.py
 
 ### Development plans:
 1. (done) Compare distribution of standard (h,t,tdg) and (h,t,tdg) generated via custom U
