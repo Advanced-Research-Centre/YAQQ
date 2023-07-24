@@ -55,36 +55,36 @@ class UdgGate(Gate):
         """Return a numpy.array for the Udg gate."""
         return la.inv(self.U)
 
-class XGate(Gate):
-    def __init__(self, label: Optional[str] = None):
-        """Create new X gate."""
-        super().__init__("x", 1, [], label=label)
-    def inverse(self):
-        r"""Return inverted X gate (itself)."""
-        return XGate()  # self-inverse
-    def __array__(self, dtype=None):
-        """Return a numpy.array for the X gate."""
-        return np.array([[0, 1], [1, 0]], dtype=dtype)
+# class XGate(Gate):
+#     def __init__(self, label: Optional[str] = None):
+#         """Create new X gate."""
+#         super().__init__("x", 1, [], label=label)
+#     def inverse(self):
+#         r"""Return inverted X gate (itself)."""
+#         return XGate()  # self-inverse
+#     def __array__(self, dtype=None):
+#         """Return a numpy.array for the X gate."""
+#         return np.array([[0, 1], [1, 0]], dtype=dtype)
 
-class CXGate(ControlledGate):
-    def __init__(self, label: Optional[str] = None, ctrl_state: Optional[Union[str, int]] = None):
-        """Create new CX gate."""
-        super().__init__(
-            "cx", 2, [], num_ctrl_qubits=1, label=label, ctrl_state=ctrl_state, base_gate=XGate()
-        )
-    def inverse(self):
-        """Return inverted CX gate (itself)."""
-        return CXGate(ctrl_state=self.ctrl_state)  # self-inverse
-    def __array__(self, dtype=None):
-        """Return a numpy.array for the CX gate."""
-        if self.ctrl_state:
-            return np.array(
-                [[1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]], dtype=dtype
-            )
-        else:
-            return np.array(
-                [[0, 0, 1, 0], [0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 0, 1]], dtype=dtype
-            )
+# class CXGate(ControlledGate):
+#     def __init__(self, label: Optional[str] = None, ctrl_state: Optional[Union[str, int]] = None):
+#         """Create new CX gate."""
+#         super().__init__(
+#             "cx", 2, [], num_ctrl_qubits=1, label=label, ctrl_state=ctrl_state, base_gate=XGate()
+#         )
+#     def inverse(self):
+#         """Return inverted CX gate (itself)."""
+#         return CXGate(ctrl_state=self.ctrl_state)  # self-inverse
+#     def __array__(self, dtype=None):
+#         """Return a numpy.array for the CX gate."""
+#         if self.ctrl_state:
+#             return np.array(
+#                 [[1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]], dtype=dtype
+#             )
+#         else:
+#             return np.array(
+#                 [[0, 0, 1, 0], [0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 0, 1]], dtype=dtype
+#             )
 
 # from qiskit.synthesis.discrete_basis.generate_basis_approximations import generate_basic_approximations
 ####################################################################################################
@@ -116,7 +116,7 @@ class gen_basis_seq:
                 node.children.append(self.Node(node.labels + (label,), sequence, []))
         return node.children
 
-    def generate_basic_approximations(self, basis_gates: list[Gate], depth: int) -> list[GateSequence]:
+    def generate_basic_approximations(self, basis_gates: list[Gate], depth: int = 3) -> list[GateSequence]:
         """Generates a list of ``GateSequence``s with the gates in ``basic_gates``.
         Args:
             basis_gates: The gates from which to create the sequences of gates.
@@ -130,7 +130,6 @@ class gen_basis_seq:
         for gate in basis_gates:
             basis.append(gate.name)
             self._1q_gates[gate.label] = gate
-        print("After---",self._1q_gates)
 
         tree = self.Node((), GateSequence(), [])
         cur_level = [tree]
@@ -145,28 +144,38 @@ class gen_basis_seq:
 
 # ===> Define gateset GS1 (standard gates via U-gate)
 
-h_U_mat = np.array([[1, 1], [1, -1]], dtype=complex) / np.sqrt(2)
-t_U_mat = np.array([[1, 0], [0, (1+1j)/np.sqrt(2)]], dtype=complex)
-tdg_U_mat = np.array([[1, 0], [0, (1-1j)/np.sqrt(2)]], dtype=complex)
-Uh = UGate("Uh", h_U_mat)
-Ut = UGate("Ut", t_U_mat)
-Utdg = UGate("Utdg", tdg_U_mat)
-CX = CXGate("CX")
+# h_U_mat = np.array([[1, 1], [1, -1]], dtype=complex) / np.sqrt(2)
+# t_U_mat = np.array([[1, 0], [0, (1+1j)/np.sqrt(2)]], dtype=complex)
+# tdg_U_mat = np.array([[1, 0], [0, (1-1j)/np.sqrt(2)]], dtype=complex)
+# Uh = UGate("Uh", h_U_mat)
+
+# # print(Uh.name)
+# # print(Uh.label)
+# # Ut = UGate("Ut", t_U_mat)
+# # Utdg = UGate("Utdg", tdg_U_mat)
+# # CX = CXGate("CX")
+# # agent1_gateset = [Uh, Ut, Utdg]
+
+# gs1 = {}    
+# gs1['H'] = UnitaryGate(h_U_mat,label='H')
+# print(gs1['H'].name)
+# print(gs1['H'].label)
+# print(gs1['H'])
+# gs1['T'] = UnitaryGate(t_U_mat,label='T')
+# gs1['Tdg'] = UnitaryGate(tdg_U_mat,label='Tdg')
+# agent1_gateset = [gs1['H'], gs1['T'], gs1['Tdg']]
 
 
-agent1_gateset = [Uh, Ut, Utdg]
+# from qiskit.transpiler.passes.synthesis import SolovayKitaev
 
+# gbs = gen_basis_seq()
+# max_depth = 2
+# agent1_gateseq = gbs.generate_basic_approximations(agent1_gateset, max_depth)
 
-from qiskit.transpiler.passes.synthesis import SolovayKitaev
+# # recursion_degree = 3 # larger recursion depth increases the accuracy and length of the decomposition
+# # skd1 = SolovayKitaev(recursion_degree=recursion_degree,basic_approximations=agent1_gateseq)   
 
-gbs = gen_basis_seq()
-max_depth = 2
-agent1_gateseq = gbs.generate_basic_approximations(agent1_gateset, max_depth)
-
-# recursion_degree = 3 # larger recursion depth increases the accuracy and length of the decomposition
-# skd1 = SolovayKitaev(recursion_degree=recursion_degree,basic_approximations=agent1_gateseq)   
-
-print(len(agent1_gateseq))
-for i in agent1_gateseq:
-    print(i.name)
+# print(len(agent1_gateseq))
+# for i in agent1_gateseq:
+#     print(i.name)
 

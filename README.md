@@ -11,7 +11,7 @@ It has the following motivations:
 2. [Solovay-Kitaev theorem](https://en.wikipedia.org/wiki/Solovay%E2%80%93Kitaev_theorem)
 
 ### How to use:
-1. Install dependencies (python 3.11.4, numpy 1.15.1, qiskit 0.43.3, astropy 5.3.1, matplotlib 3.7.2, scipy 1.11.1)
+1. Install dependencies (python 3.11.4, numpy 1.15.1, qiskit 0.43.3, astropy 5.3.1, matplotlib 3.7.2, scipy 1.11.1, tqdm 4.65.0, qutip 4.7.2, scikit-learn 1.3.0)
 2. Navigate to codes folder
 3. >> python 10_yaqq.py
 
@@ -26,10 +26,12 @@ It has the following motivations:
 8. Allow biases resource score, i.e. each gate in set can have a different cost (e.g. runtime on a QC)
 9. Use U3 to produce points for benchmarking
 10. Tuning hyperparameters of cost function.
-11. Different optimizers.
+11. (done) Different optimizers.
 12. Investigate function evaluations of optimizers.
 13. Solovay Kiteav decomposition of higher number of qubits (>1).
-14. Lekhar porjay chole eseche (Write paper).
+14. Write paper.
+15. Plot fidelity/depth difference with colour on Bloch sphere like VQCP L/T topology.
+16. Map projections
 
 ### Contributing:
 Feel free to report issues during build or execution. We also welcome suggestions to improve the performance of this application.

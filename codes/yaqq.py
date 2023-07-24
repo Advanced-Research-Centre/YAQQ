@@ -34,11 +34,13 @@ from qiskit.visualization import plot_bloch_multivector
 import qutip as qt
 from qutip.measurement import measurement_statistics
     
-####################################################################################################
+########################################################################################################################################################################################################
     
+#### TO BE DEPRECATED
 
-    
-####################################################################################################
+########################################################################################################################################################################################################
+########################################################################################################################################################################################################
+########################################################################################################################################################################################################
 
 """
 Evenly distributing n points on a Bloch sphere
@@ -58,9 +60,7 @@ def fibo_bloch(samples):
         rx_angle.append(sphe_coor[2].radian)
     return rz_angle, rx_angle
 
-
-
-####################################################################################################
+########################################################################################################################################################################################################
 
 """
 Calculate cost function based on distribution of process fidelity differences and gate depths 
@@ -398,8 +398,6 @@ def cost_func_randU(testset, gs1, thetas, depth=10):
     cfn = cfn_calc(pf01_db, dep01_db, pf02_db, dep02_db)
     return cfn, pf01_db, pf02_db
 
-  
-
 ####################################################################################################
 
 def novel_gs_scipy_randU():
@@ -530,10 +528,11 @@ def novel_gs_scipy_randS():
 ####################################################################################################
 
 
+#### NEW MODULES
 
-
-
-####################################################################################################
+########################################################################################################################################################################################################
+########################################################################################################################################################################################################
+########################################################################################################################################################################################################
 
 """
 Data Set Generation
@@ -542,8 +541,8 @@ Data Set Generation
 # ------------------------------------------------------------------------------------------------ #
 
 """
-Evenly distributed states (using golden mean)
-Ref: stackoverflow.com/questions/9600801/evenly-distributing-n-points-on-a-sphere
+Data Set Generation: Evenly distributed states (using golden mean)
+Ref: https://stackoverflow.com/questions/9600801/evenly-distributing-n-points-on-a-sphere
 """
 
 def gen_ds_fiboS(samples = 100):
@@ -561,7 +560,8 @@ def gen_ds_fiboS(samples = 100):
 # ------------------------------------------------------------------------------------------------ #
 
 """
-Haar random states
+Data Set Generation: Haar random states
+Ref: https://qiskit.org/documentation/stubs/qiskit.quantum_info.random_statevector.html
 """
 
 def gen_ds_randS(samples = 100, dimensions = 1):
@@ -573,16 +573,19 @@ def gen_ds_randS(samples = 100, dimensions = 1):
 # ------------------------------------------------------------------------------------------------ #
 
 """
-Haar random unitaries
-# https://qiskit.org/documentation/stubs/qiskit.quantum_info.random_unitary.html
+Data Set Generation: Haar random unitaries
+Ref: https://qiskit.org/documentation/stubs/qiskit.quantum_info.random_unitary.html
 """
+
 def gen_ds_randU(samples = 100, dimensions = 1):
     ds = []
     for i in range(samples):
         ds.append(UnitaryGate(random_unitary(2**dimensions),label='RndU'+str(i)))
     return ds
 
-####################################################################################################
+# ------------------------------------------------------------------------------------------------ #
+
+########################################################################################################################################################################################################
 
 """
 Data Set Visualization
@@ -652,7 +655,13 @@ def vis_ds_randU(ds):
 
 # ------------------------------------------------------------------------------------------------ #
 
-####################################################################################################
+########################################################################################################################################################################################################
+
+"""
+Unitary Decomposition Methods using given Gate Set 
+"""
+
+# ------------------------------------------------------------------------------------------------ #
 
 """
 Given an unitary and a gate set, use trials to find a circuit using the gate set that is close to the unitary
@@ -672,7 +681,7 @@ def dcmp_rand(randU, gs, trials = 100, max_depth= 100):
         seq = random.choices(list(gs.keys()), k=dep)
         qc0 = QuantumCircuit(1)
         for i in seq:
-            qc0.append(gs[i], [0]) # TBD: 2 qubit gates
+            qc0.append(gs[i], [0])
         choi01 = Choi(qc0)
         pfi = process_fidelity(choi0,choi01)
         if pfi > pfi_best:
@@ -682,10 +691,103 @@ def dcmp_rand(randU, gs, trials = 100, max_depth= 100):
 
     return pfi_best, dep_best, qcirc_best
 
-####################################################################################################
+# ------------------------------------------------------------------------------------------------ #
+
+class UGate(Gate):
+    U = np.identity(2)
+    label = ""
+    def __init__(self, label, unitary):
+        self.U = unitary
+        self.label = label
+        """Create new gate."""
+        super().__init__(label, 1, [], label=label)
+    def inverse(self):
+        """Invert this gate."""
+        return UdgGate(self.label+'dg', self.U)  # self-inverse
+    def __array__(self, dtype=None):
+        """Return a numpy.array for the U gate."""
+        return self.U
+
+# ------------------------------------------------------------------------------------------------ #
+
+class UdgGate(Gate):
+    U = np.identity(2)
+    label = ""
+    def __init__(self, label, unitary):
+        self.U = unitary
+        self.label = label
+        """Create new gate."""
+        super().__init__(label, 1, [], label=label)
+    def inverse(self):
+        """Invert this gate."""
+        return UGate(self.label[:-2], self.U)  # self-inverse
+    def __array__(self, dtype=None):
+        """Return a numpy.array for the Udg gate."""
+        return la.inv(self.U)
+
+# ------------------------------------------------------------------------------------------------ #
 
 """
-Mode 1: Compare GS2 (in code) w.r.t. GS1 (in code)
+Updated generalized generate_basic_approximations of qiskit
+Ref: from qiskit.synthesis.discrete_basis.generate_basis_approximations import generate_basic_approximations
+"""
+
+class gen_basis_seq:
+
+    Node = collections.namedtuple("Node", ("labels", "sequence", "children"))
+    _1q_gates = {}
+
+    def _check_candidate_kdtree(self, candidate, existing_sequences, tol=1e-10):
+        from sklearn.neighbors import KDTree
+        # do a quick, string-based check if the same sequence already exists
+        if any(candidate.name == existing.name for existing in existing_sequences):
+            return False
+        points = np.array([sequence.product.flatten() for sequence in existing_sequences])
+        candidate = np.array([candidate.product.flatten()])
+        kdtree = KDTree(points)
+        dist, _ = kdtree.query(candidate)
+        return dist[0][0] > tol
+
+    def _process_node(self, node: self.Node, basis: list[str], sequences: list[GateSequence]):  
+        for label in basis:
+            sequence = node.sequence.copy()
+            sequence.append(self._1q_gates[label])
+            if self._check_candidate_kdtree(sequence, sequences):
+                sequences.append(sequence)
+                node.children.append(self.Node(node.labels + (label,), sequence, []))
+        return node.children
+
+    def generate_basic_approximations(self, basis_gates: list[Gate], depth: int = 3) -> list[GateSequence]:
+        """Generates a list of ``GateSequence``s with the gates in ``basic_gates``.
+        Args:
+            basis_gates: The gates from which to create the sequences of gates.
+            depth: The maximum depth of the approximations.
+            filename: If provided, the basic approximations are stored in this file.
+        Returns:
+            List of ``GateSequences`` using the gates in ``basic_gates``.
+        """
+        
+        basis = []
+        for gate in basis_gates:
+            basis.append(gate.name)
+            self._1q_gates[gate.label] = gate
+
+        tree = self.Node((), GateSequence(), [])
+        cur_level = [tree]
+        sequences = [tree.sequence]
+        for _ in [None] * depth:
+            next_level = []
+            for node in cur_level:
+                next_level.extend(self._process_node(node, basis, sequences))
+            cur_level = next_level
+        return sequences
+          
+# ------------------------------------------------------------------------------------------------ #
+
+########################################################################################################################################################################################################
+
+"""
+Auxillary Utilities
 """
 
 # ------------------------------------------------------------------------------------------------ #
@@ -711,71 +813,111 @@ def Cartesian_to_BlochRzRx(samples):
 
 # ------------------------------------------------------------------------------------------------ #
 
+def plot_compare_gs(gs1,gs2,pf1,pf2,cd1,cd2):
+        avg_fid_gs01 = np.mean(pf1)
+        avg_fid_gs02 = np.mean(pf2)
+        avg_dep_gs01 = np.mean(cd1)
+        avg_dep_gs02 = np.mean(cd2) 
+        _, ax = plt.subplots(1, 2)
+        ax[0].plot(pf1, '-x', color = 'r', label = 'PF ['+gs1+']')
+        ax[0].plot(pf2, '-o', color = 'b', label = 'PF ['+gs2+']')
+
+        ax[0].axhline(y=avg_fid_gs01, linestyle='-.', color = 'r' , label = 'avg.PF ['+gs1+']')
+        ax[0].axhline(y=avg_fid_gs02, linestyle='-.', color = 'b' , label = 'avg.PF ['+gs2+']')
+
+        ax[1].plot(cd1, '-x', color = 'r', label = 'CD ['+gs1+']')
+        ax[1].plot(cd2, '-o', color = 'b', label = 'CD ['+gs2+']')
+
+        ax[1].axhline(y=avg_dep_gs01, linestyle='-.', color = 'r', label = 'avg.CD ['+gs1+']')
+        ax[1].axhline(y=avg_dep_gs02, linestyle='-.', color = 'b', label = 'avg.CD ['+gs2+']')
+
+        ax[0].set_ylabel("Process Fidelity")
+        ax[1].set_ylabel("Circuit Depth")
+        ax[0].set_ylim(bottom=0,top=1)
+        ax[1].set_ylim(bottom=0,top=None)
+        ax[0].legend()
+        ax[1].legend()
+        # _, ax = plt.subplots(1, 2, figsize = (7,3.5), sharex=True, layout="constrained")
+        # ax[0].set_xlabel("Equidistant Points")
+        # ax[1].set_xlabel("Equidistant Points")
+        # plt.legend(ncol = 2, bbox_to_anchor = (1, 1.13))
+
+        plot_save = input("Save plot? [Y/N] (def.: N): ") or 'N'
+        if plot_save == 'Y':
+            plt.savefig('figures/lok_dekhano_plot.pdf')
+            plt.savefig('figures/lok_dekhano_plot.png')
+
+        plt.show()
+
+########################################################################################################################################################################################################
+
+"""
+Mode 1: Compare GS2 (in code) w.r.t. GS1 (in code)
+"""
+
 def compare_gs(yaqq_ds_type, ds, yaqq_dcmp):
 
     # ===> Define gateset GS1 (standard gates)    
     h_U_mat = np.array([[1, 1], [1, -1]], dtype=complex) / np.sqrt(2)
     t_U_mat = np.array([[1, 0], [0, (1+1j)/np.sqrt(2)]], dtype=complex)
     tdg_U_mat = np.array([[1, 0], [0, (1-1j)/np.sqrt(2)]], dtype=complex)
-    gs1 = {}    
-    gs1['H'] = UnitaryGate(h_U_mat,label='H')
-    gs1['T'] = UnitaryGate(t_U_mat,label='T')
-    gs1['Tdg'] = UnitaryGate(tdg_U_mat,label='Tdg')
-    gs1_gates = ','.join(list(gs1.keys()))
+    if yaqq_dcmp == 1:  # skt
+        # h = HGate(label="h")          # legacy code
+        # t = TGate(label="t")          # legacy code
+        # tdg = TdgGate(label="tdg")    # legacy code
+        Uh = UGate("Uh", h_U_mat)
+        Ut = UGate("Ut", t_U_mat)
+        Utdg = UGate("Utdg", tdg_U_mat)
+        gs1 = [Uh, Ut, Utdg]
+        gs1_gates = 'Uh,Ut,Utdg'
+        gbs = gen_basis_seq()
+        gseq1 = gbs.generate_basic_approximations(gs1)    # default 3 max_depth
+        recursion_degree = 3 # larger recursion depth increases the accuracy and length of the decomposition 
+        dcmp_skt1 = SolovayKitaev(recursion_degree=recursion_degree,basic_approximations=gseq1)  # declare SKT object 
+    else:               # rand
+        gs1 = {}    
+        gs1['H'] = UnitaryGate(h_U_mat,label='H')
+        gs1['T'] = UnitaryGate(t_U_mat,label='T')
+        gs1['Tdg'] = UnitaryGate(tdg_U_mat,label='Tdg')
+        gs1_gates = ','.join(list(gs1.keys()))
 
     # ===> Load U3 angles from novel_gs_scipy and Define gateset GS2
-
     opt_angle_novel_gs = np.load('../opt_ang.npy')
-    gs2 = {}    
-    gs2['U3a'] = UnitaryGate(qiskit_U3(opt_angle_novel_gs[0], opt_angle_novel_gs[1], opt_angle_novel_gs[2]),label='U3a')
-    gs2['U3b'] = UnitaryGate(qiskit_U3( opt_angle_novel_gs[3], opt_angle_novel_gs[4], opt_angle_novel_gs[5]),label='U3b')
-    gs2_gates = ','.join(list(gs2.keys()))
+    if yaqq_dcmp == 1:  # skt
+        Ua = UGate("Ua", np.array(qiskit_U3(opt_angle_novel_gs[3], opt_angle_novel_gs[4], opt_angle_novel_gs[5]), dtype=complex))
+        Ub = UGate("Ub", np.array(qiskit_U3(opt_angle_novel_gs[0], opt_angle_novel_gs[1], opt_angle_novel_gs[2]), dtype=complex))
+        gs2 = [Ua, Ub]
+        gs2_gates = 'Ua,Ub'
+        gseq2 = gbs.generate_basic_approximations(gs2)    # default 3 max_depth
+        dcmp_skt2 = SolovayKitaev(recursion_degree=recursion_degree,basic_approximations=gseq2) 
+    else:               # rand
+        gs2 = {}    
+        gs2['U3a'] = UnitaryGate(qiskit_U3(opt_angle_novel_gs[0], opt_angle_novel_gs[1], opt_angle_novel_gs[2]),label='U3a')
+        gs2['U3b'] = UnitaryGate(qiskit_U3( opt_angle_novel_gs[3], opt_angle_novel_gs[4], opt_angle_novel_gs[5]),label='U3b')
+        gs2_gates = ','.join(list(gs2.keys()))
     
+    if yaqq_ds_type == 1: # fibo
+        rz_ang_list, rx_ang_list = Cartesian_to_BlochRzRx(ds)
+    else:
+        print("Currently not supported")    # TBD
+        return
+
+    # ===> Comapre GS1 and GS2
     samples = len(ds)
     pf01_db, pf02_db = [], []
     dep01_db, dep02_db = [], []
-
-    if yaqq_ds_type == 1: # fibo
-        rz_ang_list, rx_ang_list = Cartesian_to_BlochRzRx(ds)
 
     for i in range(samples):        
         qc0 = QuantumCircuit(1)
         qc0.rz(rz_ang_list[i],0)
         qc0.rx(rx_ang_list[i],0)
-
-        if yaqq_dcmp == 1: # skt
-            # OUTSIDE LOOP
-            # ===> Define gateset GS1 (standard gates)
-            # t = TGate(label="t")
-            # tdg = TdgGate(label="tdg")
-            # h = HGate(label="h")
-            # ===> Define gateset GS1 (standard gates via U-gate)
-            # Uh = UGate("Uh", h_U_mat)
-            # Ut = UGate("Ut", t_U_mat)
-            # Utdg = UGate("Utdg", tdg_U_mat)
-            # agent1_gateset = [Uh, Ut, Utdg]
-            # U3a = UGate("U3a", qiskit_U3(opt_angle_novel_gs[0], opt_angle_novel_gs[1], opt_angle_novel_gs[2]))
-            # U3b = UGate("U3b", qiskit_U3(opt_angle_novel_gs[3], opt_angle_novel_gs[4], opt_angle_novel_gs[5]))
-            # agent2_gateset = [U3a, U3b]
-            # gbs = gen_basis_seq()
-            # max_depth = 3
-            # agent1_gateseq = gbs.generate_basic_approximations(agent1_gateset, max_depth)
-            # agent2_gateseq = gbs.generate_basic_approximations(agent2_gateset, max_depth)
-            # # ===> SK Decompose trail states for both gate sets and calculate fidelity/length
-            # # ===> Declare SKT object
-            # recursion_degree = 3 # larger recursion depth increases the accuracy and length of the decomposition
-            # skd1 = SolovayKitaev(recursion_degree=recursion_degree,basic_approximations=agent1_gateseq)    
-            # skd2 = SolovayKitaev(recursion_degree=recursion_degree,basic_approximations=agent2_gateseq) 
-            # INSIDE LOOP
-            #     qc01 = skd1(qc0)
-            #     qc02 = skd2(qc0)
-            print("Currently not supported")
-
-        elif yaqq_dcmp == 2: # rand
+        if yaqq_dcmp == 1:          # Solovay-Kitaev Decomposition
+            qc01 = dcmp_skt1(qc0)
+            qc02 = dcmp_skt2(qc0)
+        elif yaqq_dcmp == 2:        # Random Decomposition
             dsU = Operator(qc0)
             _, _, qc01 = dcmp_rand(dsU,gs1)    # default 100 trials and 100 max_depth
             _, _, qc02 = dcmp_rand(dsU,gs2)    # default 100 trials and 100 max_depth
-
         choi0 = Choi(qc0)
         choi01 = Choi(qc01)
         choi02 = Choi(qc02)
@@ -785,81 +927,36 @@ def compare_gs(yaqq_ds_type, ds, yaqq_dcmp):
         dep02_db.append(qc02.depth())
 
     # ===> Plot results
-
     plot_data = input("Plot data? [Y/N] (def.: Y): ") or 'Y'
     if plot_data == 'Y':
-        avg_fid_gs01 = np.mean(pf01_db)         # Not same for ivt_fid_gs01 and pf01_db
-        avg_fid_gs02 = np.mean(pf02_db)
-        avg_dep_gs01 = np.mean(dep01_db)
-        avg_dep_gs02 = np.mean(dep02_db) 
-        _, ax = plt.subplots(1, 2)
-        ax[0].plot(pf01_db, '-x', color = 'r', label = 'PF ['+gs1_gates+']')
-        ax[0].plot(pf02_db, '-o', color = 'b', label = 'PF ['+gs2_gates+']')
+        plot_compare_gs(gs1_gates,gs2_gates,pf01_db,pf02_db,dep01_db,dep02_db)
 
-        ax[0].axhline(y=avg_fid_gs01, linestyle='-.', color = 'r' , label = 'avg.PF ['+gs1_gates+']')
-        ax[0].axhline(y=avg_fid_gs02, linestyle='-.', color = 'b' , label = 'avg.PF ['+gs2_gates+']')
-
-        ax[1].plot(dep01_db, '-x', color = 'r', label = 'CD ['+gs1_gates+']')
-        ax[1].plot(dep02_db, '-o', color = 'b', label = 'CD ['+gs2_gates+']')
-
-        ax[1].axhline(y=avg_dep_gs01, linestyle='-.', color = 'r', label = 'avg.CD ['+gs1_gates+']')
-        ax[1].axhline(y=avg_dep_gs02, linestyle='-.', color = 'b', label = 'avg.CD ['+gs2_gates+']')
-
-        ax[0].set_ylabel("Process Fidelity")
-        ax[1].set_ylabel("Circuit Depth")
-        ax[0].set_ylim(bottom=0,top=1)
-        ax[1].set_ylim(bottom=0,top=None)
-        ax[0].legend()
-        ax[1].legend()
-        plt.show()
-
-
-    # _, ax = plt.subplots(1, 2, figsize = (7,3.5), sharex=True, layout="constrained")
-
-    # ax[0].plot(fid_gs01, '-x', label = "[h, t, tdg]")
-    # ax[0].plot(fid_gs02, '-o', label = "[U3a, U3b]")
-    # ax[1].plot(len_gs01, '-x', label = "[h, t, tdg]")
-    # ax[1].plot(len_gs02, '-o', label = "[U3a, U3b]")
-    
-    # ax[0].set_ylabel("Process Fidelity")
-    # ax[1].set_ylabel("Decomposed Circuit Length")
-    # ax[0].set_xlabel("Equidistant Points")
-    # ax[1].set_xlabel("Equidistant Points")
-    # ax[0].set_ylim(bottom=0,top=1)
-    # ax[1].set_ylim(bottom=0,top=None)
-    # plt.legend(ncol = 2, bbox_to_anchor = (1, 1.13))
-    # plt.savefig('figures/lok_dekhano_plot.pdf')
-    # plt.savefig('figures/lok_dekhano_plot.png')
-    # plt.show()
-
-####################################################################################################
+########################################################################################################################################################################################################
 
 """
 Mode 2: Generative novel GS2 w.r.t. GS1 (in code)
 """
 
-def generate_gs(ds, yaqq_dcmp,yaqq_search):
+def generate_gs(yaqq_ds_type, ds, yaqq_dcmp, yaqq_search):
 
-    # print("Option 2: Generate complementary gate set of GS1 using random search for randS") # SKT
-    # print("Option 3: Generate complementary gate set of GS1 using random search for randU")
-    # print("Option 4: Generate complementary gate set of GS1 using scipy for randS") # RandDecomposition
-    # print("Option 5: Generate complementary gate set of GS1 using scipy for randU") # RandDecomposition
-    #     case '2': novel_gs_rand_randS()
-    #     case '3': novel_gs_rand_randU()
-    #     case '4': novel_gs_scipy_randS()
-    #     case '5': novel_gs_scipy_randU()
+    print("To be integrated....")
+    
+    # novel_gs_rand_randS()
+    # novel_gs_rand_randU()
+    # novel_gs_scipy_randS()
+    # novel_gs_scipy_randU()
 
     return
 
-####################################################################################################        
+########################################################################################################################################################################################################     
 
 if __name__ == "__main__":
 
     
     devmode = input("\n  ===> Run Default Configuration? [Y/N] (def.: Y): ") or 'Y'
     if devmode == 'Y':
-        # generate_gs(gen_ds_fiboS(yaqq_ds_size),4)
-        compare_gs(yaqq_ds_type=1,ds=gen_ds_fiboS(samples=20),yaqq_dcmp=2)
+        # compare_gs(yaqq_ds_type=1,ds=gen_ds_fiboS(samples=2),yaqq_dcmp=1)
+        generate_gs(yaqq_ds_type=1,ds=gen_ds_fiboS(samples=2),yaqq_dcmp=1,yaqq_search=1)
         exit(1)
 
     # Note: Currently YAQQ is configured only for 1 qubit
@@ -883,7 +980,7 @@ if __name__ == "__main__":
             print("Invalid option")
             exit(1)   
 
-    yaqq_ds_show = input("  ===> Plot Data Set? [Y/N] (def.: N): ") or 'N'
+    yaqq_ds_show = input("  ===> Visualize Data Set? [Y/N] (def.: N): ") or 'N'
     if yaqq_ds_show == 'Y':
         match yaqq_ds_type:
             case 1: 
@@ -916,3 +1013,5 @@ if __name__ == "__main__":
             exit(1)   
 
     print("\nThank you for using YAQQ.")
+
+########################################################################################################################################################################################################
