@@ -29,6 +29,7 @@ It has the following motivations:
 15. Plot fidelity/depth difference with colour on Bloch sphere like VQCP L/T topology.
 16. Map projections
 17. PySimpleGUI
+18. Equispaced states in higher dimension Hilbert space (under some distance measure)
 
 ### Contributing:
 Feel free to report issues during build or execution. We also welcome suggestions to improve the performance of this application.
