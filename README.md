@@ -6,14 +6,10 @@ It has the following motivations:
 1. given a gate set, and a set of quantum circuits, find another gate set that may perform similar/better on average, but better for a subset of those circuits
 2. given a set of noisy gates fabricated on a quantum processor, treat them as non-noisy and compile algorithms with that set. the noisy gates are first purified (i.e. should be unitary, but not the desired one, so it does not solve the problem of depolarizing)
 
-### Influenced by:
-1. [RuliadTrotter: meta-modeling Metamathematical observers](https://community.wolfram.com/groups/-/m/t/2575951)
-2. [Solovay-Kitaev theorem](https://en.wikipedia.org/wiki/Solovay%E2%80%93Kitaev_theorem)
-
 ### How to use:
 1. Install dependencies (python 3.11.4, numpy 1.15.1, qiskit 0.43.3, astropy 5.3.1, matplotlib 3.7.2, scipy 1.11.1, tqdm 4.65.0, qutip 4.7.2, scikit-learn 1.3.0)
 2. Navigate to codes folder
-3. >> python yaqq.py
+3. `>> python yaqq.py`
 
 ### Development plans:
 1. (done) Compare distribution of standard (h,t,tdg) and (h,t,tdg) generated via custom U
@@ -24,7 +20,7 @@ It has the following motivations:
 6. See if tradeoff exists between gate set size and 2 scores
 7. Bloch sphere states using hierarchical hex mesh (e.g. [H3: Uber's Hexagonal Hierarchical Spatial Index](https://github.com/uber/h3))
 8. Allow biases resource score, i.e. each gate in set can have a different cost (e.g. runtime on a QC)
-9. Use U3 to produce points for benchmarking
+9. (done) Use U3 to produce points for benchmarking
 10. Tuning hyperparameters of cost function.
 11. (done) Different optimizers.
 12. Investigate function evaluations of optimizers.
@@ -32,9 +28,13 @@ It has the following motivations:
 14. Write paper.
 15. Plot fidelity/depth difference with colour on Bloch sphere like VQCP L/T topology.
 16. Map projections
+17. PySimpleGUI
 
 ### Contributing:
 Feel free to report issues during build or execution. We also welcome suggestions to improve the performance of this application.
+
+### Influenced by:
+1. [RuliadTrotter: meta-modeling Metamathematical observers](https://community.wolfram.com/groups/-/m/t/2575951)
 
 ### Citation:
 If you find the tool useful, please consider citing:
