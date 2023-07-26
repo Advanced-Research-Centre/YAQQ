@@ -390,7 +390,7 @@ Mode 1: Compare GS2 (in code) w.r.t. GS1 (in code)
 
 # ------------------------------------------------------------------------------------------------ #
 
-def compare_gs(yaqq_ds_type, ds, yaqq_dcmp):
+def compare_gs(ds, yaqq_dcmp):
 
     # ===> Define gateset GS1 (standard gates) 
     gs1, gs1_gates = def_GS1(yaqq_dcmp)
@@ -417,12 +417,6 @@ def compare_gs(yaqq_ds_type, ds, yaqq_dcmp):
         gs2['U3a'] = UnitaryGate(qiskit_U3(opt_angle_novel_gs[0], opt_angle_novel_gs[1], opt_angle_novel_gs[2]),label='U3a')
         gs2['U3b'] = UnitaryGate(qiskit_U3( opt_angle_novel_gs[3], opt_angle_novel_gs[4], opt_angle_novel_gs[5]),label='U3b')
         gs2_gates = ','.join(list(gs2.keys()))
-    
-    # if yaqq_ds_type == 1: # fibo
-    #     rz_ang_list, rx_ang_list = Cartesian_to_BlochRzRx(ds)
-    # else:
-    #     print("Currently not supported")    # TBD
-    #     return
 
     # ===> Compare GS1 and GS2
     samples = len(ds)
@@ -432,8 +426,6 @@ def compare_gs(yaqq_ds_type, ds, yaqq_dcmp):
     for i in range(samples):        
         qc0 = QuantumCircuit(1)
         qc0.append(ds[i], [0])
-        # qc0.rz(rz_ang_list[i],0)
-        # qc0.rx(rx_ang_list[i],0)
         if yaqq_dcmp == 1:          # Solovay-Kitaev Decomposition
             qc01 = dcmp_skt1(qc0)
             qc02 = dcmp_skt2(qc0)
@@ -832,8 +824,8 @@ if __name__ == "__main__":
     
     devmode = input("\n  ===> Run Default Configuration? [Y/N] (def.: Y): ") or 'Y'
     if devmode == 'Y':
-        # compare_gs(yaqq_ds_type=1,ds=gen_ds_fiboS(samples=10),yaqq_dcmp=1)
-        compare_gs(yaqq_ds_type=1,ds=gen_ds_fiboS(samples=10),yaqq_dcmp=2)
+        # compare_gs(ds=gen_ds_fiboS(samples=10),yaqq_dcmp=1)
+        compare_gs(ds=gen_ds_fiboS(samples=10),yaqq_dcmp=2)
         # generate_gs(yaqq_ds_type=1,ds=gen_ds_fiboS(samples=2),yaqq_dcmp=1,yaqq_search=1)
         # generate_gs(yaqq_ds_type=3,ds=gen_ds_randU(samples=2),yaqq_dcmp=2,yaqq_search=1)
     else:
@@ -873,7 +865,7 @@ if __name__ == "__main__":
         yaqq_mode = int(input("   Option (def.: 2): ")) or 2
         match yaqq_mode:
             case 1: 
-                ds = compare_gs(yaqq_ds_type, ds, yaqq_dcmp)  # Returns list of [x,y,z] coordinates
+                ds = compare_gs(ds, yaqq_dcmp)  # Returns list of [x,y,z] coordinates
             case 2: 
                 print("\n  ===> Choose Search Method:")
                 print("   Method 1 - Random Gate Set Search")
