@@ -2,38 +2,36 @@
 https://github.com/Advanced-Research-Centre/YAQQ
 """
 
+########################################################################################################################################################################################################
+
 from __future__ import annotations
 import warnings
 import collections
-import numpy as np
-import qiskit.circuit.library.standard_gates as gates
-from qiskit.circuit import Gate
-from qiskit.quantum_info.operators.predicates import matrix_equal
-from qiskit.synthesis.discrete_basis.gate_sequence import GateSequence
-import numpy as np
-from qiskit.transpiler.passes.synthesis import SolovayKitaev
-from qiskit.quantum_info import process_fidelity, Choi
-from astropy.coordinates import cartesian_to_spherical
-from qiskit import QuantumCircuit
+import os
 import matplotlib.pyplot as plt
 import math
-from qiskit.extensions import UnitaryGate, U3Gate, UGate
-from qiskit.circuit import Gate
-from qiskit.quantum_info import random_unitary
-import scipy.linalg as la
-from qiskit.circuit.gate import Gate
 from tqdm import tqdm
-from scipy.optimize import minimize  
 import random
+import numpy as np
+import scipy.linalg as la
+from scipy.optimize import minimize  
+from astropy.coordinates import cartesian_to_spherical
+
+from qiskit import QuantumCircuit
+from qiskit import execute, Aer
+from qiskit.circuit import Gate
+from qiskit.circuit.gate import Gate
+from qiskit.extensions import UnitaryGate, UGate
+from qiskit.quantum_info import random_statevector, random_unitary, Statevector, DensityMatrix, Operator, process_fidelity, Choi
 from qiskit.quantum_info.operators.random import random_unitary
-from qiskit.quantum_info import random_statevector, Statevector, DensityMatrix, Operator
-from qiskit.visualization import plot_bloch_multivector
+from qiskit.synthesis.discrete_basis.gate_sequence import GateSequence
+from qiskit.transpiler.passes.synthesis import SolovayKitaev
+import qiskit.circuit.library.standard_gates as gates
+
 import qutip as qt
 from qutip.measurement import measurement_statistics
-import os
 
-########################################################################################################################################################################################################
-########################################################################################################################################################################################################
+
 ########################################################################################################################################################################################################
 
 """
@@ -47,7 +45,7 @@ Data Set Generation: Evenly distributed states (using golden mean)
 Ref: https://stackoverflow.com/questions/9600801/evenly-distributing-n-points-on-a-sphere
 """
 
-def gen_ds_fiboS(samples = 100):
+def gen_ds_fiboS(samples = 100, dimensions = 1):
     ds = []
     phi = math.pi * (3. - math.sqrt(5.))        # golden angle in radians
     for i in range(samples):
@@ -56,7 +54,14 @@ def gen_ds_fiboS(samples = 100):
         theta = phi * i                         # golden angle increment
         x = math.cos(theta) * radius
         z = math.sin(theta) * radius
-        ds.append([x,y,z])
+        sphe_coor = cartesian_to_spherical(x, y, z)
+        z_ang = sphe_coor[1].radian+math.pi/2
+        x_ang = sphe_coor[2].radian
+        qc = QuantumCircuit(dimensions)       
+        qc.ry(z_ang,0)  # To rotate state z_ang from |0>, rotate about Y
+        qc.rz(x_ang,0)  # To rotate state x_ang from |+>, rotate about Z
+        fiboU_0 = Operator.from_circuit(qc)      
+        ds.append(UnitaryGate(fiboU_0,label='FiboU'+str(i)))
     return ds
 
 # ------------------------------------------------------------------------------------------------ #
@@ -69,7 +74,11 @@ Ref: https://qiskit.org/documentation/stubs/qiskit.quantum_info.random_statevect
 def gen_ds_randS(samples = 100, dimensions = 1):
     ds = []
     for i in range(samples):
-        ds.append(random_statevector(2**dimensions).data)
+        qc = QuantumCircuit(dimensions)
+        randS = random_statevector(2**dimensions).data
+        qc.prepare_state(randS, list(range(0, dimensions)))   
+        randU_0 = Operator.from_circuit(qc)
+        ds.append(UnitaryGate(randU_0,label='RndU'+str(i)))
     return ds
 
 # ------------------------------------------------------------------------------------------------ #
@@ -90,48 +99,13 @@ def gen_ds_randU(samples = 100, dimensions = 1):
 ########################################################################################################################################################################################################
 
 """
-Data Set Visualization
+Data Set Visualization and Result Plotting
 """
 
 # ------------------------------------------------------------------------------------------------ #
 
 def rgb_to_hex(r, g, b):
     return '#{:02x}{:02x}{:02x}'.format(r, g, b)
-
-# ------------------------------------------------------------------------------------------------ #
-
-def vis_ds_fiboS(ds):
-    b = qt.Bloch()
-    b.point_marker = ['o']
-    b.point_size = [20]
-    samples = len(ds)
-    color = []
-    for i in range(samples):
-        b.add_points(ds[i])
-        color.append(rgb_to_hex(int((ds[i][0]+1)*127),int((ds[i][1]+1)*127),int((ds[i][2]+1)*127)))
-        
-    b.point_color = color
-    b.render()
-    plt.show()
-
-# ------------------------------------------------------------------------------------------------ #
-
-def vis_ds_randS(ds):
-    b = qt.Bloch()
-    b.point_marker = ['o']
-    b.point_size = [20]
-    samples = len(ds)
-    color = []
-    for i in range(samples):
-        b.add_states(qt.Qobj(ds[i]), kind='point')
-        _, _, pX = measurement_statistics(qt.Qobj(ds[i]), qt.sigmax())
-        _, _, pY = measurement_statistics(qt.Qobj(ds[i]), qt.sigmay())
-        _, _, pZ = measurement_statistics(qt.Qobj(ds[i]), qt.sigmaz())
-        color.append(rgb_to_hex(int(pX[0]*255),int(pY[0]*255),int(pZ[0]*255)))
-        
-    b.point_color = color
-    b.render()
-    plt.show()
 
 # ------------------------------------------------------------------------------------------------ #
 
@@ -154,6 +128,51 @@ def vis_ds_randU(ds):
     b.point_color = color
     b.render()
     plt.show()
+
+# ------------------------------------------------------------------------------------------------ #
+
+def plot_compare_gs(gs1,gs2,pf1,pf2,cd1,cd2,pfivt=False):
+        
+        avg_fid_gs01 = np.mean(pf1)
+        avg_fid_gs02 = np.mean(pf2)
+        avg_dep_gs01 = np.mean(cd1)
+        avg_dep_gs02 = np.mean(cd2) 
+        
+        ivt_fid_gs01 = np.subtract(1,pf1)
+
+        _, ax = plt.subplots(1, 2)
+        ax[0].plot(pf1, '-x', color = 'r', label = 'PF ['+gs1+']')
+        ax[0].plot(pf2, '-o', color = 'b', label = 'PF ['+gs2+']')
+        if pfivt:
+            ax[0].plot(ivt_fid_gs01, '-x', color = 'g', label = 'target PF trend')
+
+        ax[0].axhline(y=avg_fid_gs01, linestyle='-.', color = 'r' , label = 'avg.PF ['+gs1+']')
+        ax[0].axhline(y=avg_fid_gs02, linestyle='-.', color = 'b' , label = 'avg.PF ['+gs2+']')
+
+        ax[1].plot(cd1, '-x', color = 'r', label = 'CD ['+gs1+']')
+        ax[1].plot(cd2, '-o', color = 'b', label = 'CD ['+gs2+']')
+
+        ax[1].axhline(y=avg_dep_gs01, linestyle='-.', color = 'r', label = 'avg.CD ['+gs1+']')
+        ax[1].axhline(y=avg_dep_gs02, linestyle='-.', color = 'b', label = 'avg.CD ['+gs2+']')
+
+        ax[0].set_ylabel("Process Fidelity")
+        ax[1].set_ylabel("Circuit Depth")
+        ax[0].set_ylim(bottom=0,top=1)
+        ax[1].set_ylim(bottom=0,top=None)
+        ax[0].legend()
+        ax[1].legend()
+        # _, ax = plt.subplots(1, 2, figsize = (7,3.5), sharex=True, layout="constrained")
+        # ax[0].set_xlabel("Equidistant Points")
+        # ax[1].set_xlabel("Equidistant Points")
+        # plt.legend(ncol = 2, bbox_to_anchor = (1, 1.13))
+
+        plot_save = input("Save plots and data? [Y/N] (def.: N): ") or 'N'
+        if plot_save == 'Y':
+            plt.savefig('figures/lok_dekhano_plot.pdf')
+            plt.savefig('figures/lok_dekhano_plot.png')      
+            # np.save('data/gateset_list', gs2)     # TBD:  GS2 has only names [U1,U2,U3], not matrix
+
+        plt.show()
 
 # ------------------------------------------------------------------------------------------------ #
 
@@ -316,51 +335,6 @@ def Cartesian_to_BlochRzRx(samples):
 
 # ------------------------------------------------------------------------------------------------ #
 
-def plot_compare_gs(gs1,gs2,pf1,pf2,cd1,cd2,pfivt=False):
-        
-        avg_fid_gs01 = np.mean(pf1)
-        avg_fid_gs02 = np.mean(pf2)
-        avg_dep_gs01 = np.mean(cd1)
-        avg_dep_gs02 = np.mean(cd2) 
-        
-        ivt_fid_gs01 = np.subtract(1,pf1)
-
-        _, ax = plt.subplots(1, 2)
-        ax[0].plot(pf1, '-x', color = 'r', label = 'PF ['+gs1+']')
-        ax[0].plot(pf2, '-o', color = 'b', label = 'PF ['+gs2+']')
-        if pfivt:
-            ax[0].plot(ivt_fid_gs01, '-x', color = 'g', label = 'target PF trend')
-
-        ax[0].axhline(y=avg_fid_gs01, linestyle='-.', color = 'r' , label = 'avg.PF ['+gs1+']')
-        ax[0].axhline(y=avg_fid_gs02, linestyle='-.', color = 'b' , label = 'avg.PF ['+gs2+']')
-
-        ax[1].plot(cd1, '-x', color = 'r', label = 'CD ['+gs1+']')
-        ax[1].plot(cd2, '-o', color = 'b', label = 'CD ['+gs2+']')
-
-        ax[1].axhline(y=avg_dep_gs01, linestyle='-.', color = 'r', label = 'avg.CD ['+gs1+']')
-        ax[1].axhline(y=avg_dep_gs02, linestyle='-.', color = 'b', label = 'avg.CD ['+gs2+']')
-
-        ax[0].set_ylabel("Process Fidelity")
-        ax[1].set_ylabel("Circuit Depth")
-        ax[0].set_ylim(bottom=0,top=1)
-        ax[1].set_ylim(bottom=0,top=None)
-        ax[0].legend()
-        ax[1].legend()
-        # _, ax = plt.subplots(1, 2, figsize = (7,3.5), sharex=True, layout="constrained")
-        # ax[0].set_xlabel("Equidistant Points")
-        # ax[1].set_xlabel("Equidistant Points")
-        # plt.legend(ncol = 2, bbox_to_anchor = (1, 1.13))
-
-        plot_save = input("Save plots and data? [Y/N] (def.: N): ") or 'N'
-        if plot_save == 'Y':
-            plt.savefig('figures/lok_dekhano_plot.pdf')
-            plt.savefig('figures/lok_dekhano_plot.png')      
-            # np.save('data/gateset_list', gs2)     # TBD:  GS2 has only names [U1,U2,U3], not matrix
-
-        plt.show()
-
-# ------------------------------------------------------------------------------------------------ #
-
 def def_GS1(yaqq_dcmp):
 
     # ===> Define gateset GS1 (standard gates)    
@@ -444,11 +418,11 @@ def compare_gs(yaqq_ds_type, ds, yaqq_dcmp):
         gs2['U3b'] = UnitaryGate(qiskit_U3( opt_angle_novel_gs[3], opt_angle_novel_gs[4], opt_angle_novel_gs[5]),label='U3b')
         gs2_gates = ','.join(list(gs2.keys()))
     
-    if yaqq_ds_type == 1: # fibo
-        rz_ang_list, rx_ang_list = Cartesian_to_BlochRzRx(ds)
-    else:
-        print("Currently not supported")    # TBD
-        return
+    # if yaqq_ds_type == 1: # fibo
+    #     rz_ang_list, rx_ang_list = Cartesian_to_BlochRzRx(ds)
+    # else:
+    #     print("Currently not supported")    # TBD
+    #     return
 
     # ===> Compare GS1 and GS2
     samples = len(ds)
@@ -457,8 +431,9 @@ def compare_gs(yaqq_ds_type, ds, yaqq_dcmp):
 
     for i in range(samples):        
         qc0 = QuantumCircuit(1)
-        qc0.rz(rz_ang_list[i],0)
-        qc0.rx(rx_ang_list[i],0)
+        qc0.append(ds[i], [0])
+        # qc0.rz(rz_ang_list[i],0)
+        # qc0.rx(rx_ang_list[i],0)
         if yaqq_dcmp == 1:          # Solovay-Kitaev Decomposition
             qc01 = dcmp_skt1(qc0)
             qc02 = dcmp_skt2(qc0)
@@ -857,14 +832,15 @@ if __name__ == "__main__":
     
     devmode = input("\n  ===> Run Default Configuration? [Y/N] (def.: Y): ") or 'Y'
     if devmode == 'Y':
-        # compare_gs(yaqq_ds_type=1,ds=gen_ds_fiboS(samples=2),yaqq_dcmp=1)
+        # compare_gs(yaqq_ds_type=1,ds=gen_ds_fiboS(samples=10),yaqq_dcmp=1)
+        compare_gs(yaqq_ds_type=1,ds=gen_ds_fiboS(samples=10),yaqq_dcmp=2)
         # generate_gs(yaqq_ds_type=1,ds=gen_ds_fiboS(samples=2),yaqq_dcmp=1,yaqq_search=1)
-        generate_gs(yaqq_ds_type=3,ds=gen_ds_randU(samples=2),yaqq_dcmp=2,yaqq_search=1)
+        # generate_gs(yaqq_ds_type=3,ds=gen_ds_randU(samples=2),yaqq_dcmp=2,yaqq_search=1)
     else:
         # Note: Currently YAQQ is configured only for 1 qubit
         # TBD: make general 2 qubit gate with 15 free parameters
 
-        yaqq_ds_size = int(input("\n  ===> Enter Data Set Size (def.: 500): ")) or 500
+        yaqq_ds_size = int(input("\n  ===> Enter Data Set Size (def.: 500): ") or 500)
             
         print("\n  ===> Choose Data Set:")
         print("   Data Set 1 - Evenly distributed states (using golden mean)")
@@ -873,9 +849,9 @@ if __name__ == "__main__":
         yaqq_ds_type = int(input("   Option (def.: 1): ") or 1)
         match yaqq_ds_type:
             case 1: 
-                ds = gen_ds_fiboS(samples=yaqq_ds_size)  # Returns list of [x,y,z] coordinates
+                ds = gen_ds_fiboS(samples=yaqq_ds_size)  # Returns list of unitary gate objects as the preparation for the state vectors from |0>
             case 2: 
-                ds = gen_ds_randS(samples=yaqq_ds_size)  # Returns list of state vectors
+                ds = gen_ds_randS(samples=yaqq_ds_size)  # Returns list of unitary gate objects as the preparation for the state vectors from |0>
             case 3: 
                 ds = gen_ds_randU(samples=yaqq_ds_size)  # Returns list of unitary gate objects
             case _ : 
@@ -884,13 +860,7 @@ if __name__ == "__main__":
 
         yaqq_ds_show = input("\n  ===> Visualize Data Set? [Y/N] (def.: N): ") or 'N'
         if yaqq_ds_show == 'Y':
-            match yaqq_ds_type:
-                case 1: 
-                    vis_ds_fiboS(ds)
-                case 2: 
-                    vis_ds_randS(ds)
-                case 3: 
-                    vis_ds_randU(ds)    # Plots the states when the unitaries are applied to |0> state    
+            vis_ds_randU(ds)    # Plots the states when the unitaries are applied to |0> state    
 
         print("\n  ===> Choose Gate Decomposition Method:")
         print("   Method 1 - Solovay-Kitaev Decomposition")

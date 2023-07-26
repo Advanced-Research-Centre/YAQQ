@@ -1,5 +1,6 @@
 from qiskit import QuantumCircuit
-from qiskit.quantum_info import random_statevector
+from qiskit.quantum_info import random_statevector, Operator
+from math import pi
 
 ds = []
 for i in range(1):
@@ -8,9 +9,16 @@ for i in range(1):
 print(ds[0])
 qc = QuantumCircuit(1)
 initial_state = ds[0]
-qc.initialize(initial_state, 0)
+
+# qc.initialize(initial_state, 0)
+# qc.prepare_state(initial_state, 0)
+
+  
+# qc.rz(pi/5,0)
+qc.rx(pi/9,0)
 
 print(qc)
+print(Operator.from_circuit(qc))
 
 from qiskit import execute, Aer
 usimulator=Aer.get_backend('unitary_simulator')
