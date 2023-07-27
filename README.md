@@ -26,9 +26,10 @@ It has the following motivations:
 - [ ] Tuning hyperparameters of cost function
 - [ ] Equispaced states in higher dimension Hilbert space (under some distance measure)
 - [ ] Bloch sphere states using hierarchical hex mesh (e.g. [H3: Uber's Hexagonal Hierarchical Spatial Index](https://github.com/uber/h3))
-- [ ] Plot fidelity/depth difference with colour on Bloch sphere like VQCP L/T topology
+- [x] Plot fidelity/depth difference with colour on Bloch sphere like VQCP L/T topology
 - [ ] Map projections
 - [ ] Solovay Kiteav decomposition of higher number of qubits (>1)
+- [ ] General 2 qubit gate with 15 free parameters
 - [ ] PySimpleGUI
 - [ ] Write paper
 

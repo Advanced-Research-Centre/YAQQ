@@ -5,7 +5,6 @@ https://github.com/Advanced-Research-Centre/YAQQ
 ########################################################################################################################################################################################################
 
 from __future__ import annotations
-import warnings
 import collections
 import os
 import matplotlib.pyplot as plt
@@ -18,15 +17,13 @@ from scipy.optimize import minimize
 from astropy.coordinates import cartesian_to_spherical
 
 from qiskit import QuantumCircuit
-from qiskit import execute, Aer
 from qiskit.circuit import Gate
 from qiskit.circuit.gate import Gate
 from qiskit.extensions import UnitaryGate, UGate
-from qiskit.quantum_info import random_statevector, random_unitary, Statevector, DensityMatrix, Operator, process_fidelity, Choi
+from qiskit.quantum_info import random_statevector, random_unitary, Statevector, Operator, process_fidelity, Choi
 from qiskit.quantum_info.operators.random import random_unitary
 from qiskit.synthesis.discrete_basis.gate_sequence import GateSequence
 from qiskit.transpiler.passes.synthesis import SolovayKitaev
-import qiskit.circuit.library.standard_gates as gates
 
 import qutip as qt
 from qutip.measurement import measurement_statistics
@@ -131,6 +128,29 @@ def vis_ds_randU(ds):
 
 # ------------------------------------------------------------------------------------------------ #
 
+def vis_dsU_gs(ds, pf, cd):
+    b = qt.Bloch()
+    b.point_marker = ['o']
+    b.point_size = [20]
+    samples = len(ds)
+    color = []
+    cd_max = max(cd)
+    for i in range(samples):
+        qc = QuantumCircuit(1)
+        qc.append(ds[i], [0])
+        sv = Statevector(qc).data
+        b.add_states(qt.Qobj(sv), kind='point')
+        _, _, pX = measurement_statistics(qt.Qobj(sv), qt.sigmax())
+        _, _, pY = measurement_statistics(qt.Qobj(sv), qt.sigmay())
+        _, _, pZ = measurement_statistics(qt.Qobj(sv), qt.sigmaz())
+        color.append(rgb_to_hex(int(pf[i]*255),int(cd[i]*255/cd_max),int(pf[i]*255)))
+        
+    b.point_color = color
+    b.render()
+    plt.show()
+
+# ------------------------------------------------------------------------------------------------ #
+
 def plot_compare_gs(gs1,gs2,pf1,pf2,cd1,cd2,pfivt=False):
         
         avg_fid_gs01 = np.mean(pf1)
@@ -191,7 +211,7 @@ Given an unitary and a gate set, use trials to find a circuit using the gate set
 def dcmp_rand(randU, gs, trials = 100, max_depth= 100):
 
     qc0 = QuantumCircuit(1)
-    qc0.append(randU,[0])
+    qc0.append(Operator(randU),[0])
     choi0 = Choi(qc0)
     
     pfi_best = 0
@@ -309,7 +329,7 @@ class gen_basis_seq:
 ########################################################################################################################################################################################################
 
 """
-Auxillary Utilities
+Utilities
 """
 
 # ------------------------------------------------------------------------------------------------ #
@@ -382,6 +402,21 @@ def def_GS2_rand(yaqq_dcmp):
 
 # ------------------------------------------------------------------------------------------------ #
 
+def def_GS2_param(thetas, yaqq_dcmp):
+
+    # ===> Define gateset GS2 (parametric gates)      
+    if yaqq_dcmp == 1:  # skt
+        U3a = UGate("U3a", qiskit_U3(thetas[0], thetas[1], thetas[2]))
+        U3b = UGate("U3b", qiskit_U3(thetas[3], thetas[4], thetas[5]))
+        gs2 = [U3a, U3b]
+    else:               # rand
+        gs2 = {}   
+        gs2['U3a'] = UnitaryGate(qiskit_U3(thetas[0], thetas[1], thetas[2]),label='U3a') 
+        gs2['U3b'] = UnitaryGate(qiskit_U3(thetas[3], thetas[4], thetas[5]),label='U3b')
+    return gs2
+
+# ------------------------------------------------------------------------------------------------ #
+
 ########################################################################################################################################################################################################
 
 """
@@ -423,16 +458,15 @@ def compare_gs(ds, yaqq_dcmp):
     pf01_db, pf02_db = [], []
     dep01_db, dep02_db = [], []
 
-    for i in range(samples):        
+    for i in tqdm(range(samples)):   
         qc0 = QuantumCircuit(1)
         qc0.append(ds[i], [0])
         if yaqq_dcmp == 1:          # Solovay-Kitaev Decomposition
             qc01 = dcmp_skt1(qc0)
             qc02 = dcmp_skt2(qc0)
         elif yaqq_dcmp == 2:        # Random Decomposition
-            dsU = Operator(qc0)
-            _, _, qc01 = dcmp_rand(dsU,gs1)    # default 100 trials and 100 max_depth
-            _, _, qc02 = dcmp_rand(dsU,gs2)    # default 100 trials and 100 max_depth
+            _, _, qc01 = dcmp_rand(qc0,gs1)    # default 100 trials and 100 max_depth
+            _, _, qc02 = dcmp_rand(qc0,gs2)    # default 100 trials and 100 max_depth
         choi0 = Choi(qc0)
         choi01 = Choi(qc01)
         choi02 = Choi(qc02)
@@ -444,6 +478,7 @@ def compare_gs(ds, yaqq_dcmp):
     # ===> Plot results
     plot_data = input("Plot data? [Y/N] (def.: Y): ") or 'Y'
     if plot_data == 'Y':
+        # vis_dsU_gs(ds, pf01_db, dep01_db)
         plot_compare_gs(gs1_gates,gs2_gates,pf01_db,pf02_db,dep01_db,dep02_db)
 
 ########################################################################################################################################################################################################
@@ -458,22 +493,20 @@ Mode 2: Generative novel GS2 w.r.t. GS1 (in code)
 Calculate cost function based on distribution of process fidelity differences and gate depths of two gate sets
 """
 
-def cfn_calc(fid_gs01,dep_gs01,fid_gs02,dep_gs02):
-    ivt_fid_gs01 = np.subtract(1,fid_gs01)
-    dist_fid = sum(abs(np.subtract(ivt_fid_gs01,fid_gs02)))
-    avg_fid_gs01 = np.mean(fid_gs01) 
-    avg_dep_gs01 = np.mean(dep_gs01)
-    avg_fid_gs02 = np.mean(fid_gs02)
-    avg_dep_gs02 = np.mean(dep_gs02)
-    dist_fid_avg = - avg_fid_gs02   # avg_fid_gs01 - avg_fid_gs02
-    dist_dep_avg = avg_dep_gs02     # avg_dep_gs02 - avg_dep_gs01
-    w_trend, w_favg, w_davg = 200, 1000, 1
-    cfn = w_trend*dist_fid + w_favg*dist_fid_avg + w_davg*dist_dep_avg
+def cfn_calc(pf01_db,cd01_db,pf02_db,cd02_db):
+    ivt_pf_gs01 = np.subtract(1,pf01_db)
+    dist_pf_novelty = np.mean(abs(np.subtract(ivt_pf_gs01,pf02_db)))
+    ivt_cd_gs01 = np.subtract(max(cd01_db),cd01_db)
+    dist_cd_novelty = np.mean(abs(np.subtract(ivt_cd_gs01,cd02_db)))
+    dist_pf_avg = - np.mean(pf02_db)
+    dist_cd_avg = np.mean(cd02_db)
+    w_pf_trend, w_cd_trend, w_pf_avg, w_cd_avg = 100, 100, 1000, 1
+    cfn = w_pf_trend*dist_pf_novelty + w_cd_trend*dist_cd_novelty + w_pf_avg*dist_pf_avg + w_cd_avg*dist_cd_avg
     return cfn
 
 # ------------------------------------------------------------------------------------------------ #
 
-def generate_gs_random(yaqq_ds_type, ds, yaqq_dcmp, trials = 20):
+def generate_gs_random(ds, yaqq_dcmp, trials = 20):
     
     # ===> Define gateset GS1 (standard gates) 
     gs1, gs1_gates = def_GS1(yaqq_dcmp)
@@ -484,32 +517,23 @@ def generate_gs_random(yaqq_ds_type, ds, yaqq_dcmp, trials = 20):
         recursion_degree = 3 # larger recursion depth increases the accuracy and length of the decomposition 
         dcmp_skt1 = SolovayKitaev(recursion_degree=recursion_degree,basic_approximations=gseq1)  # declare SKT object 
 
-    if yaqq_ds_type == 1: # fibo
-        rz_ang_list, rx_ang_list = Cartesian_to_BlochRzRx(ds)
-
     # ===> Evaluate GS1 (standard gates) 
     samples = len(ds)
     pf01_db, dep01_db = [], []
     qc0_db, choi0_db = [], []
-
     for i in range(samples):     
-        if yaqq_ds_type == 1 and yaqq_dcmp == 1:    # Fibo + SKT
-            qc0 = QuantumCircuit(1)
-            qc0.rz(rz_ang_list[i],0)
-            qc0.rx(rx_ang_list[i],0)
-            qc0_db.append(qc0)
-            choi0 = Choi(qc0)
-            choi0_db.append(choi0)
+        qc0 = QuantumCircuit(1)
+        qc0.append(ds[i], [0])
+        qc0_db.append(qc0)
+        if yaqq_dcmp == 1:          # Solovay-Kitaev Decomposition
             qc01 = dcmp_skt1(qc0)
-            choi01 = Choi(qc01)
-            pfi = process_fidelity(choi0,choi01)
-            cdi = qc01.depth()
-        elif yaqq_ds_type == 3 and yaqq_dcmp == 2:  # RandU + Rand   
-            pfi, cdi, _ = dcmp_rand(ds[i],gs1)    # default 100 trials and 100 max_depth 
-        else:
-            print("Currently not supported")    # TBD: Fibo + Rand, RandS + SKT, RandS + Rand, RandU + SKT
-        pf01_db.append(pfi)
-        dep01_db.append(cdi)
+        elif yaqq_dcmp == 2:        # Random Decomposition
+            _, _, qc01 = dcmp_rand(qc0,gs1)    # default 100 trials and 100 max_depth
+        choi0 = Choi(qc0)
+        choi0_db.append(choi0)
+        choi01 = Choi(qc01)
+        pf01_db.append(process_fidelity(choi0,choi01))
+        dep01_db.append(qc01.depth())
 
     cfn_best, cfn_best_db = 100000, []
     for t in tqdm(range(trials)):
@@ -525,20 +549,16 @@ def generate_gs_random(yaqq_ds_type, ds, yaqq_dcmp, trials = 20):
         # ===> Decompose data set with GS2
         pf02_db, dep02_db = [], []
         for i in range(samples):     
-            if yaqq_ds_type == 1 and yaqq_dcmp == 1:    # Fibo + SKT
+
+            if yaqq_dcmp == 1:          # Solovay-Kitaev Decomposition
                 qc02 = dcmp_skt2(qc0_db[i])
-                choi02 = Choi(qc02)
-                pfi = process_fidelity(choi0_db[i],choi02)
-                cdi = qc02.depth()
-            elif yaqq_ds_type == 3 and yaqq_dcmp == 2:  # RandU + Rand      
-                pfi, cdi, _ = dcmp_rand(ds[i],gs2)    # default 100 trials and 100 max_depth 
-            else:
-                print("Currently not supported")    # TBD
-            pf02_db.append(pfi)
-            dep02_db.append(cdi)
+            elif yaqq_dcmp == 2:        # Random Decomposition
+                _, _, qc02 = dcmp_rand(qc0_db[i],gs2)    # default 100 trials and 100 max_depth
+            choi02 = Choi(qc02)
+            pf02_db.append(process_fidelity(choi0_db[i],choi02))
+            dep02_db.append(qc02.depth())
 
         # ===> Evaluate GS2 based on cost function
-        
         cfn = cfn_calc(pf01_db, dep01_db, pf02_db, dep02_db)
         if cfn <= cfn_best:
             cfn_best = cfn
@@ -555,52 +575,31 @@ def generate_gs_random(yaqq_ds_type, ds, yaqq_dcmp, trials = 20):
 
 # ------------------------------------------------------------------------------------------------ #
 
-def eval_cfn(yaqq_ds_type, ds, yaqq_dcmp, dcmp):
+def eval_cfn(ds, qc0_db, choi0_db, pf01_db, cd01_db, thetas, yaqq_dcmp):
     
-    if yaqq_ds_type == 1: # fibo
-        rz_ang_list, rx_ang_list = Cartesian_to_BlochRzRx(ds)
-
+    gs2 = def_GS2_param(thetas, yaqq_dcmp)
+    if yaqq_dcmp == 1:  # skt
+        gbs = gen_basis_seq()
+        gseq2 = gbs.generate_basic_approximations(gs2)    # default 3 max_depth
+        recursion_degree = 3 # larger recursion depth increases the accuracy and length of the decomposition 
+        dcmp_skt2 = SolovayKitaev(recursion_degree=recursion_degree,basic_approximations=gseq2)  # declare SKT object 
     samples = len(ds)
-    pf_db, dep_db = [], []
-    for i in range(samples):     
-        if yaqq_ds_type == 1 and yaqq_dcmp == 1:    # Fibo + SKT
-            qc0 = QuantumCircuit(1)
-            qc0.rz(rz_ang_list[i],0)
-            qc0.rx(rx_ang_list[i],0)
-            choi0 = Choi(qc0)
-            qc01 = dcmp(qc0)
-            choi01 = Choi(qc01)
-            pfi = process_fidelity(choi0,choi01)
-            cdi = qc01.depth()
-        elif yaqq_ds_type == 3 and yaqq_dcmp == 2:  # RandU + Rand   
-            pfi, cdi, _ = dcmp_rand(ds[i],dcmp)    # default 100 trials and 100 max_depth 
-        else:
-            print("Currently not supported")    # TBD: Fibo + Rand, RandS + SKT, RandS + Rand, RandU + SKT
-        pf_db.append(pfi)
-        dep_db.append(cdi) 
-
-    return pf_db, dep_db
-
-# ------------------------------------------------------------------------------------------------ #
-
-def eval_cfn_skt(yaqq_ds_type, ds, gs2, thetas, dcmp_skt1):
-
-    pf01_db, dep01_db = eval_cfn(yaqq_ds_type, ds, yaqq_dcmp, dcmp_skt1)
-    gbs = gen_basis_seq()
-    U3a = UGate("U3a", qiskit_U3(thetas[0], thetas[1], thetas[2]))
-    U3b = UGate("U3b", qiskit_U3(thetas[3], thetas[4], thetas[5]))
-    gs2 = [U3a, U3b]
-    gseq2 = gbs.generate_basic_approximations(gs2)    # default 3 max_depth
-    recursion_degree = 3 # larger recursion depth increases the accuracy and length of the decomposition 
-    dcmp_skt2 = SolovayKitaev(recursion_degree=recursion_degree,basic_approximations=gseq2)  # declare SKT object 
-    pf02_db, dep02_db = eval_cfn(yaqq_ds_type, ds, yaqq_dcmp, dcmp_skt2)
-    cfn = cfn_calc(pf01_db, dep01_db, pf02_db, dep02_db)
+    pf02_db, cd02_db = [], []
+    for i in range(samples):  
+        if yaqq_dcmp == 1:          # Solovay-Kitaev Decomposition
+            qc02 = dcmp_skt2(qc0_db[i])
+        elif yaqq_dcmp == 2:        # Random Decomposition
+            _, _, qc02 = dcmp_rand(qc0_db[i],gs2)    # default 100 trials and 100 max_depth
+        choi02 = Choi(qc02)
+        pf02_db.append(process_fidelity(choi0_db[i],choi02))
+        cd02_db.append(qc02.depth())
+    cfn = cfn_calc(pf01_db, cd01_db, pf02_db, cd02_db)
     return cfn
-
+    
 # ------------------------------------------------------------------------------------------------ #
 
-def generate_gs_optimize(yaqq_ds_type, ds, yaqq_dcmp, trials = 3, method = 'COBLYA'):
-    
+def generate_gs_optimize(ds, yaqq_dcmp, trials = 2, method = 'COBYLA', maxiter = 20):
+
     # ===> Define gateset GS1 (standard gates) 
     gs1, gs1_gates = def_GS1(yaqq_dcmp)
 
@@ -610,227 +609,80 @@ def generate_gs_optimize(yaqq_ds_type, ds, yaqq_dcmp, trials = 3, method = 'COBL
         recursion_degree = 3 # larger recursion depth increases the accuracy and length of the decomposition 
         dcmp_skt1 = SolovayKitaev(recursion_degree=recursion_degree,basic_approximations=gseq1)  # declare SKT object 
 
-    def cost_to_optimize(thetas):
-        return eval_cfn_skt(yaqq_ds_type, ds, agent1_gateset, thetas, dcmp_skt1)
-
-    cost_list, ang_list = [], []
-    for _ in range(trials):
-        initial_guess = np.random.random(2*3)
-        if yaqq_dcmp == 1:  # skt
-            print('Cost of initial random guess of GS:', cost_to_optimize(initial_guess))
-            res = minimize(cost_to_optimize, initial_guess, method = 'COBYLA', options={'maxiter': 200})
-            print('Cost of optimized GS:', res.fun)
-            cost_list.append(res['fun'])
-            ang_list.append(res['x'])
-        else:
-            print('Not yet supported')
-            
-    sort_opt_ang = ang_list[cost_list.index(np.min(cost_list)) ]
-    print('Best settings: ',sort_opt_ang)
-    # np.save('opt_ang', sort_opt_ang)
-
-    print("To be integrated....")
-
-    # yaqq_ds_type = fibo, randS, randU
-    # yaqq_dcmp = skt, rand
-    # novel_gs_scipy_randS()
-    # novel_gs_scipy_randU()
-
-    return
-
-# ------------------------------------------------------------------------------------------------ #
-
-def generate_gs(yaqq_ds_type, ds, yaqq_dcmp, yaqq_search):
-    if yaqq_search == 1: 
-        generate_gs_random(yaqq_ds_type, ds, yaqq_dcmp)
-    else:
-        generate_gs_optimize(yaqq_ds_type, ds, yaqq_dcmp)
-    return
-
-########################################################################################################################################################################################################     
- 
-### TO BE DEPRECATED
-
-########################################################################################################################################################################################################
-########################################################################################################################################################################################################
-
-####################################################################################################
-
-def cost_func(rzrx, agent1_gateset, thetas, max_depth, recursion_degree):
-    ## ===> Given set
-    gbs = gen_basis_seq()
-    agent1_gateseq = gbs.generate_basic_approximations(agent1_gateset, max_depth) 
-    skd1 = SolovayKitaev(recursion_degree=recursion_degree,basic_approximations=agent1_gateseq)
-    ## ===> New set
-    U3a = UGate("U3a", qiskit_U3(thetas[0], thetas[1], thetas[2]))
-    U3b = UGate("U3b", qiskit_U3(thetas[3], thetas[4], thetas[5]))
-    agent2_gateset = [U3a, U3b]
-    agent2_gateseq = gbs.generate_basic_approximations(agent2_gateset, max_depth) 
-    skd2 = SolovayKitaev(recursion_degree=recursion_degree,basic_approximations=agent2_gateseq) 
-    # ===> Decompose each state on Bloch sphere with GS1 and store fid and depth
-    pf01_db, dep01_db, pf02_db, dep02_db = fidelity_per_point(rzrx, skd1, skd2)
-    # ===> Evaluate GS2 based on cost function
-    cfn = cfn_calc(pf01_db, dep01_db, pf02_db, dep02_db)
-    return cfn
-
-####################################################################################################
-
-def fidelity_per_point(rzrx, skd1, skd2):
-    rz_ang_list, rx_ang_list = rzrx[0], rzrx[1]
+    # ===> Evaluate GS1 (standard gates) 
+    samples = len(ds)
+    pf01_db, cd01_db = [], []
     qc0_db, choi0_db = [], []
-    pf01_db, dep01_db = [], []
-    for p in range(len(rz_ang_list)):
+    for i in range(samples):     
         qc0 = QuantumCircuit(1)
-        qc0.rz(rz_ang_list[p],0)
-        qc0.rx(rx_ang_list[p],0)
+        qc0.append(ds[i], [0])
         qc0_db.append(qc0)
+        if yaqq_dcmp == 1:          # Solovay-Kitaev Decomposition
+            qc01 = dcmp_skt1(qc0)
+        elif yaqq_dcmp == 2:        # Random Decomposition
+            _, _, qc01 = dcmp_rand(qc0,gs1)    # default 100 trials and 100 max_depth
         choi0 = Choi(qc0)
         choi0_db.append(choi0)
-        qc01 = skd1(qc0)
         choi01 = Choi(qc01)
         pf01_db.append(process_fidelity(choi0,choi01))
-        dep01_db.append(qc01.depth())
-    # ===> Decompose each state on Bloch sphere with GS2
-    pf02_db, dep02_db = [], []
-    for p in range(len(rz_ang_list)):
-        qc02 = skd2(qc0_db[p])
-        choi02 = Choi(qc02)
-        pf02_db.append(process_fidelity(choi0_db[p],choi02))
-        dep02_db.append(qc02.depth())
-    return pf01_db, dep01_db, pf02_db, dep02_db
-
-####################################################################################################
-
-def cost_func_randU(testset, gs1, thetas, depth=10):
- 
-    ## ===> New set
-
-    U3a_mat = qiskit_U3(thetas[0], thetas[1], thetas[2])
-    U3b_mat = qiskit_U3(thetas[3], thetas[4], thetas[5])
-    gs2 = {}    
-    gs2['u3a'] = UnitaryGate(U3a_mat,label='U3a')
-    gs2['u3b'] = UnitaryGate(U3b_mat,label='U3b')
-
-    pf01_db, dep01_db = [], [10]*5
-    pf02_db, dep02_db = [], [10]*5
-
-    for randU in testset:
-        pf01_db.append(rand_decompose(1,randU,gs1,trials=10,depth=depth))
-        pf02_db.append(rand_decompose(1,randU,gs2,trials=30,depth=depth))
-
-    # ===> Evaluate GS2 based on cost function
-    cfn = cfn_calc(pf01_db, dep01_db, pf02_db, dep02_db)
-    return cfn, pf01_db, pf02_db
-
-####################################################################################################
-
-def novel_gs_scipy_randU():
-    """
-    ADGHRFRGFDRETHNJGDEGHBBGHXNZ
-    """
-
-    # ===> Make test set
-    points = 5
-    testset = gen_testset(points, 1)
-    cfn_best, cfn_best_db = 100000, []
-
-    # ===> Define gateset GS1 (standard gates via U-gate)
-    h_U_mat = np.array([[1, 1], [1, -1]], dtype=complex) / np.sqrt(2)
-    t_U_mat = np.array([[1, 0], [0, (1+1j)/np.sqrt(2)]], dtype=complex)
-    gs1 = {}
-    gs1['h'] = UnitaryGate(h_U_mat,label='Uh')
-    gs1['t'] = UnitaryGate(t_U_mat,label='Ut')
-
-    # ===> Decompose each randU with GS1 using random decomposition and store fid and depth
-    depth = 5
-    pf01_db, pf02_db = [], []
-
-    trials  = 3
+        cd01_db.append(qc01.depth())
 
     def cost_to_optimize(thetas):
-        cost, pf01, pf02 = cost_func_randU(testset, gs1, thetas, depth=depth)
-        return cost
+        return eval_cfn(ds, qc0_db, choi0_db, pf01_db, cd01_db, thetas, yaqq_dcmp)
     
     cost_list, ang_list = [], []
-    for _ in range(trials):
+    for t in tqdm(range(trials)):
         initial_guess = np.random.random(2*3)
-        initial_cost = cost_to_optimize(initial_guess)
-        print('Cost of initial random guess of GS:', initial_cost)
-        res = minimize(cost_to_optimize, initial_guess, method = 'COBYLA', options={'maxiter': 50})
-        print('Cost of optimized GS:', res.fun)
-        cost, ang = 0, 0
-        if res['fun'] < initial_cost:
-            cost = res['fun']
-            ang = res['x']
-        else:
-            cost = initial_cost
-            ang = initial_guess
-        
-        cost_list.append(cost)
-        ang_list.append(ang)   
-    
+        res = minimize(cost_to_optimize, initial_guess, method = method, options={'maxiter': maxiter})
+        cost_list.append(res['fun'])
+        ang_list.append(res['x'])
+        # print('Cost of initial random guess of GS:', initial_cost)
+        # print('Cost of optimized GS:', res.fun)
+
     best_GS = cost_list.index(np.min(cost_list))
     sort_opt_ang = ang_list[best_GS]
-    np.save('opt_ang_rand', sort_opt_ang)
+    # np.save('opt_ang_rand', sort_opt_ang)
+    print("\nAngles of best GS found:",sort_opt_ang, "with cost",cost_list[best_GS])
 
-    # bana tera gs2 
+    # ===> Evaluate GS2 (novel gates) 
+    # TBD: Choose which method to use for decomposition, and if Rand, does not mean it will have same cost now, as inside SciPy
     U3a_mat = qiskit_U3(sort_opt_ang[0], sort_opt_ang[1], sort_opt_ang[2])
     U3b_mat = qiskit_U3(sort_opt_ang[3], sort_opt_ang[4], sort_opt_ang[5])
     gs2 = {}    
     gs2['u3a'] = UnitaryGate(U3a_mat,label='U3a')
     gs2['u3b'] = UnitaryGate(U3b_mat,label='U3b')
+    gs2_gates = ','.join(list(gs2.keys()))
+    pf02_db, cd02_db = [], []
 
-    pf02_db, pf01_db = [], []
-    for randU in testset:
-        pf02_db.append(rand_decompose(1,randU,gs2,trials=50,depth=depth))
-        pf01_db.append(rand_decompose(1,randU,gs1,trials=50,depth=depth))
+    for i in range(samples):     
+        pf02, cd02, qc01 = dcmp_rand(qc0_db[i],gs2)    # default 100 trials and 100 max_depth
+        pf02_db.append(pf02)
+        cd02_db.append(cd02)
     
-
-    print("\nAngles of best GS found:",sort_opt_ang, "with cost",cost_list[best_GS])
-
-    # ivt_fid_gs01 = np.subtract(1,pf01_db)
-    # avg_fid_gs01 = np.mean(pf01_db)
-    # avg_fid_best = np.mean(pf02_db)   
-        
-    # plot_data = input("Plot data? [y/n]: ")
-    # if plot_data == 'y':
-
-
-    #     _, ax = plt.subplots(1, 2)
-    #     ax[0].plot(pf01_db, '-x', color = 'r', label = 'PF [gs1_gates]')
-    #     ax[0].plot(ivt_fid_gs01, '-x', color = 'g', label = 'target PF trend')
-    #     ax[0].plot(pf02_db, '-o', color = 'b', label = 'PF [+gs2_gates+]')
-
-    #     ax[0].axhline(y=avg_fid_gs01, linestyle='-.', color = 'r' , label = 'avg.PF [+gs1_gates+]')
-    #     ax[0].axhline(y=avg_fid_best, linestyle='-.', color = 'b' , label = 'avg.PF [+gs2_gates+]')
-
-    #     ax[0].set_ylabel("Process Fidelity")
-    #     ax[0].set_ylim(bottom=0,top=1)
-    #     ax[0].legend()
-    #     plt.show()
+    # ===> Plot results
+    plot_data = input("Plot data? [Y/N] (def.: Y): ") or 'Y'
+    if plot_data == 'Y':
+        plot_compare_gs(gs1_gates,gs2_gates,pf01_db,pf02_db,cd01_db,cd02_db,pfivt=True) 
 
     return
 
-####################################################################################################
-
-
-
-
+# ------------------------------------------------------------------------------------------------ #
 
 ########################################################################################################################################################################################################
 
 if __name__ == "__main__":
 
-    
     devmode = input("\n  ===> Run Default Configuration? [Y/N] (def.: Y): ") or 'Y'
+
     if devmode == 'Y':
         # compare_gs(ds=gen_ds_fiboS(samples=10),yaqq_dcmp=1)
-        compare_gs(ds=gen_ds_fiboS(samples=10),yaqq_dcmp=2)
-        # generate_gs(yaqq_ds_type=1,ds=gen_ds_fiboS(samples=2),yaqq_dcmp=1,yaqq_search=1)
-        # generate_gs(yaqq_ds_type=3,ds=gen_ds_randU(samples=2),yaqq_dcmp=2,yaqq_search=1)
+        # compare_gs(ds=gen_ds_fiboS(samples=10),yaqq_dcmp=2)
+        # generate_gs_random(ds=gen_ds_fiboS(samples=2),yaqq_dcmp=1)
+        # generate_gs_random(ds=gen_ds_randU(samples=2),yaqq_dcmp=2)
+        generate_gs_optimize(ds=gen_ds_randU(samples=2),yaqq_dcmp=1)
+        # generate_gs_optimize(ds=gen_ds_randU(samples=2),yaqq_dcmp=2)
+
     else:
-        # Note: Currently YAQQ is configured only for 1 qubit
-        # TBD: make general 2 qubit gate with 15 free parameters
 
         yaqq_ds_size = int(input("\n  ===> Enter Data Set Size (def.: 500): ") or 500)
             
@@ -865,13 +717,21 @@ if __name__ == "__main__":
         yaqq_mode = int(input("   Option (def.: 2): ")) or 2
         match yaqq_mode:
             case 1: 
-                ds = compare_gs(ds, yaqq_dcmp)  # Returns list of [x,y,z] coordinates
+                compare_gs(ds, yaqq_dcmp)
             case 2: 
                 print("\n  ===> Choose Search Method:")
                 print("   Method 1 - Random Gate Set Search")
-                print("   Method 2 - U3 Angles SciPy L-BFGS-B/COBYLA with Multiple Random Initialization")
+                print("   Method 2 - U3 Angles Optimize with Multiple Random Initialization")
                 yaqq_search = int(input("   Option (def.: 1): ")) or 1
-                ds = generate_gs(yaqq_ds_type, ds, yaqq_dcmp, yaqq_search)  # Returns list of state vectors
+                
+                match yaqq_search:
+                    case 1: 
+                        generate_gs_random(ds, yaqq_dcmp)
+                    case 2: 
+                        generate_gs_optimize(ds, yaqq_dcmp)
+                    case _: 
+                        print("Invalid option")
+                        exit(1)   
             case _ : 
                 print("Invalid option")
                 exit(1)   
