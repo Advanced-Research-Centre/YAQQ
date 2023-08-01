@@ -564,7 +564,7 @@ def generate_gs_random(ds, yaqq_dcmp, trials = 20):
             cfn_best = cfn
             cfn_best_db = [gs2, pf02_db, dep02_db]   
 
-    print("Best settings found:",cfn_best_db[0])
+    print("\nBest settings found:",cfn_best_db[0])
     
     # ===> Plot results
     plot_data = input("Plot data? [Y/N] (def.: Y): ") or 'Y'
@@ -723,7 +723,8 @@ if __name__ == "__main__":
                 print("   Method 1 - Random Gate Set Search")
                 print("   Method 2 - U3 Angles Optimize with Multiple Random Initialization")
                 yaqq_search = int(input("   Option (def.: 1): ")) or 1
-                
+                print()
+
                 match yaqq_search:
                     case 1: 
                         generate_gs_random(ds, yaqq_dcmp)

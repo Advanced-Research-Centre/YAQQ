@@ -110,11 +110,11 @@ Feel free to report issues during build or execution. We also welcome suggestion
 - [ ] Given a set of noisy gates fabricated on a quantum processor, treat them as non-noisy and compile algorithms with that set. the noisy gates are first purified (i.e. should be unitary, but not the desired one, so it does not solve the problem of depolarizing)
 
 ### Citation:
-If you find the tool useful, please consider citing:
+If you find the repository useful, please consider citing:
 
 ```
 @misc{YAQQ,
-  author={Sarkar, Aritra and Kundu, Akash and Feld, Sebastian},
+  author={Sarkar, Aritra and Kundu, Akash},
   title={YAQQ: Yet Another Quantum Quantizer},
   howpublished={\url{[https://github.com/Advanced-Research-Centre/YAQQ](https://github.com/Advanced-Research-Centre/YAQQ)}},
   year={2023}
