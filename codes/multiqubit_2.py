@@ -202,6 +202,65 @@ def scipy_2q_decomp_multi_rand_unitary(U, random_trail):
 
 # https://qiskit.org/documentation/stubs/qiskit.quantum_info.TwoQubitBasisDecomposer.html
 # Decomposes a two-qubit unitary into a minimal number of KAK (0,1,2,3) gates, based on how many rotation axis needed
+# ------------------------------------------------------------------------------------------------ #
+
+from qiskit.quantum_info.synthesis import qsd
+# https://github.com/Qiskit/qiskit-terra/blob/main/qiskit/quantum_info/synthesis/qsd.py
+
+def dcmp_QSD_rand(randU, gs, trials = 100, max_depth= 100):
+
+    # Choi matrix of the unitary
+    # U_dim = randU.num_qubits
+    # qc0 = QuantumCircuit(U_dim)
+    # qc0.append(Operator(randU),range(U_dim)) # The unitary is always applied in qubits in ascending order
+    # choi0 = Choi(qc0)
+    # print(randU)
+    # print(qc0)
+
+    # Decompose randU using Qiskit QSD
+    qsd_circ = qsd.qs_decomposition(randU.to_matrix())
+    # choi01 = Choi(qsd_circ)
+    # print('\nQSD Fidelity:',process_fidelity(choi0,choi01))
+    # print(qsd_circ)
+
+    # Create a list of rotation gates to be decomposed
+    ds_qsd_1q = []
+    for g in qsd_circ:
+        if g.operation.num_qubits == 1:
+            ds_qsd_1q.append(UnitaryGate(Operator(g.operation),label='QSD_U'))
+    
+    # Decompose the rotation gates using 1-qb gs
+    U_qsd_1q_gs_qcirc_best_db = []
+    cum_pf = 1
+    for U_qsd_1q in ds_qsd_1q:
+        # print('Decomposing:')
+        # print(U_qsd_1q.definition)
+        pfi_best, _, qcirc_best = dcmp_rand(U_qsd_1q, gs, trials = trials, max_depth= max_depth)
+        U_qsd_1q_gs_qcirc_best_db.append(qcirc_best)
+        cum_pf *= pfi_best
+        # print('Process Fidelity of decomposed gate:',pfi_best,'Cumulative Fidelity:', cum_pf)
+
+    # Decompose the CX gate using KAK-CAN
+
+    # Replace the rotation gates with decomposed circuits
+    qc01 = QuantumCircuit(randU.num_qubits)
+    for g in qsd_circ:
+        if g.operation.num_qubits == 1:
+            U_gs = U_qsd_1q_gs_qcirc_best_db.pop(0)
+            tgt = [qsd_circ.find_bit(x).index for x in g.qubits]
+            for g_gs in U_gs:
+                qc01.append(g_gs.operation, tgt)
+        else:
+            qc01.append(g.operation, [qsd_circ.find_bit(x).index for x in g.qubits])
+            # if  g.operation.num_qubits == 2:
+            #     replace with the KAK-CAN decomposition
+            
+    # choi01 = Choi(qc01)
+    # pfi01 = process_fidelity(choi0,choi01)
+    # print('\nFinal Fidelity:',pfi01)
+    # print(qc01)
+
+    return qc01
 
 # ------------------------------------------------------------------------------------------------ #
 
@@ -246,7 +305,6 @@ def dcmp_rand_N(randU, gs, trials = 100, max_depth= 100):
     qc01 = QuantumCircuit(randU.num_qubits)
     for g in qsd_circ:
         if g.operation.num_qubits == 1:
-            # qc01.append(U_qsd_1q_gs_qcirc_best_db.pop(0), [qsd_circ.find_bit(x).index for x in g.qubits])
             U_gs = U_qsd_1q_gs_qcirc_best_db.pop(0)
             tgt = [qsd_circ.find_bit(x).index for x in g.qubits]
             for g_gs in U_gs:
@@ -302,8 +360,8 @@ def dcmp_rand(randU, gs, trials = 100, max_depth= 100):
     pfi_best = 0
     dep_best = 0
     qcirc_best = []
-    for _ in tqdm(range(trials)):   # for TEST
-    # for _ in range(trials):
+    # for _ in tqdm(range(trials)):   # for TEST
+    for _ in range(trials):
         dep = random.randrange(1,max_depth)
         seq = random.choices(list(U_gs.keys()), k=dep)
         qc0 = QuantumCircuit(U_dim)
@@ -318,14 +376,63 @@ def dcmp_rand(randU, gs, trials = 100, max_depth= 100):
             pfi_best = pfi
             qcirc_best = qc0
             dep_best = dep
-
-    # print('TEST: Best process fidelity: ', pfi_best)    # for TEST
-    # print('TEST: Best depth: ', dep_best)               # for TEST
-    # print('TEST: Best circuit:')                        # for TEST
-    # print(qcirc_best)                                   # for TEST
     
     return pfi_best, dep_best, qcirc_best
-    
+
+# ------------------------------------------------------------------------------------------------ #
+
+"""
+Calculate cost function based on distribution of process fidelity differences and gate depths of two gate sets
+"""
+
+def cfn_calc(pf01_db,cd01_db,pf02_db,cd02_db):
+    ivt_pf_gs01 = np.subtract(1,pf01_db)
+    dist_pf_novelty = np.mean(abs(np.subtract(ivt_pf_gs01,pf02_db)))
+    ivt_cd_gs01 = np.subtract(max(cd01_db),cd01_db)
+    dist_cd_novelty = np.mean(abs(np.subtract(ivt_cd_gs01,cd02_db)))
+    dist_pf_avg = - np.mean(pf02_db)
+    dist_cd_avg = np.mean(cd02_db)
+    w_pf_trend, w_cd_trend, w_pf_avg, w_cd_avg = 100, 100, 1000, 1
+    cfn = w_pf_trend*dist_pf_novelty + w_cd_trend*dist_cd_novelty + w_pf_avg*dist_pf_avg + w_cd_avg*dist_cd_avg
+    return cfn
+# ------------------------------------------------------------------------------------------------ #
+
+# ------------------------------------------------------------------------------------------------ #
+def plot_compare_gs(gs1,gs2,pf1,pf2,cd1,cd2,pfivt=False):
+        
+        avg_fid_gs01 = np.mean(pf1)
+        avg_fid_gs02 = np.mean(pf2)
+        avg_dep_gs01 = np.mean(cd1)
+        avg_dep_gs02 = np.mean(cd2) 
+        
+        ivt_fid_gs01 = np.subtract(1,pf1)
+
+        _, ax = plt.subplots(1, 2)
+        ax[0].plot(pf1, '-x', color = 'r', label = 'PF ['+gs1+']')
+        ax[0].plot(pf2, '-o', color = 'b', label = 'PF ['+gs2+']')
+        if pfivt:
+            ax[0].plot(ivt_fid_gs01, '-x', color = 'g', label = 'target PF trend')
+
+        ax[0].axhline(y=avg_fid_gs01, linestyle='-.', color = 'r' , label = 'avg.PF ['+gs1+']')
+        ax[0].axhline(y=avg_fid_gs02, linestyle='-.', color = 'b' , label = 'avg.PF ['+gs2+']')
+
+        ax[1].plot(cd1, '-x', color = 'r', label = 'CD ['+gs1+']')
+        ax[1].plot(cd2, '-o', color = 'b', label = 'CD ['+gs2+']')
+
+        ax[1].axhline(y=avg_dep_gs01, linestyle='-.', color = 'r', label = 'avg.CD ['+gs1+']')
+        ax[1].axhline(y=avg_dep_gs02, linestyle='-.', color = 'b', label = 'avg.CD ['+gs2+']')
+
+        ax[0].set_ylabel("Process Fidelity")
+        ax[1].set_ylabel("Circuit Depth")
+        ax[0].set_ylim(bottom=0,top=1)
+        ax[1].set_ylim(bottom=0,top=None)
+        ax[0].legend()
+        ax[1].legend()
+
+
+        plt.show()
+
+# ------------------------------------------------------------------------------------------------ #
 
 def TEST_dcmp_rand():
 
@@ -337,12 +444,61 @@ def TEST_dcmp_rand():
     gs1['H'] = UnitaryGate(h_U_mat,label='H')
     gs1['T'] = UnitaryGate(t_U_mat,label='T')
     gs1['CX'] = UnitaryGate(cx_U_mat,label='CX')
+    gs1_gates = ','.join(list(gs1.keys()))
+    
+    samples = 5
+    ds = gen_ds_randU(samples = samples, max_dim = 2)
 
-    ds = gen_ds_randU(samples = 1, max_dim = 2)
-
+    # Choi matrix of the unitary
+    choi0_db = []
     for randU in ds:
-        dcmp_rand_N(randU, gs1, trials = 500, max_depth= 500)
-        # dcmp_rand(randU = randU, gs = gs1, trials = 3000, max_depth= 500)
+        U_dim = randU.num_qubits
+        qc0 = QuantumCircuit(U_dim)
+        qc0.append(Operator(randU),range(U_dim)) # The unitary is always applied in qubits in ascending order
+        choi0_db.append(Choi(qc0))
+
+    pf01_db, cd01_db = [], []
+    for i in range(samples):  
+        qc01 = dcmp_QSD_rand(ds[i], gs1, trials = 100, max_depth= 50)
+        choi01 = Choi(qc01)
+        pf01_db.append(process_fidelity(choi0_db[i],choi01))
+        cd01_db.append(qc01.size())
+
+    print(pf01_db)
+    print(cd01_db)
+
+    cfn_best, cfn_best_db = 100000, []
+    trials = 10
+    for t in range(trials):
+        # ===> Define gateset GS2 (random gates)    
+        U1_mat = random_unitary(2).data
+        U2_mat = random_unitary(2).data
+        gs2 = {}   
+        gs2['U1'] = UnitaryGate(U1_mat,label='U1') 
+        gs2['U2'] = UnitaryGate(U2_mat,label='U2')
+        gs2['CX'] = UnitaryGate(cx_U_mat,label='CX')
+        gs2_gates = ','.join(list(gs2.keys()))
+
+        pf02_db, cd02_db = [], []
+        for i in range(samples):  
+            qc02 = dcmp_QSD_rand(ds[i], gs2, trials = 100, max_depth= 50)
+            choi02 = Choi(qc02)
+            pf02_db.append(process_fidelity(choi0_db[i],choi02))
+            cd02_db.append(qc02.size())      
+        
+        print("Trial:",t, pf02_db, cd02_db)
+        # ===> Evaluate GS2 based on cost function
+        cfn = cfn_calc(pf01_db, cd01_db, pf02_db, cd02_db)
+        if cfn <= cfn_best:
+            cfn_best = cfn
+            cfn_best_db = [gs2, pf02_db, cd02_db]   
+
+    print("\nBest settings found:",cfn_best_db[0])
+    print("\nBest metrics found:",cfn_best_db[1:])
+
+     
+    # ===> Plot results
+    plot_compare_gs(gs1_gates,gs2_gates,pf01_db,pf02_db,cd01_db,cd02_db,pfivt=True)   
 
     return
 
