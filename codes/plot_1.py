@@ -1,6 +1,22 @@
-import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib.pyplot as plt
+from collections import Counter
 
+x = []
+for _ in range(30000):
+    statistics_generated = np.clip(np.random.negative_binomial(n=70,p=0.573, size=100),25,70)
+    # statistics_generated = np.clip(np.random.negative_binomial(n=40,p=0.6, size=100),0,0)
+    c = Counter(statistics_generated)
+    halting_step = c.most_common(1)[0][0]
+    x.append(halting_step)
+
+# plt.hist(x)
+plt.hist(x, bins=30, density=True, alpha=0.6, color='g', label='Tailed Distribution')
+plt.show()
+    # if statistics_generated <= 30:
+    #     print(statistics_generated)
+
+exit()
 
 gateset_load = np.load('data/gateset_list.npy')
 depth_load = np.load('data/total_depth_list.npy')

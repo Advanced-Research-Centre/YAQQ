@@ -56,7 +56,38 @@ def Can(tx, ty, tz):
 
 
 
-def rand_2q_decomp(U, random_trail):
+def rand_2q_CAN_single_unitary_decomp(U, random_trail):
+
+    choi0 = Choi(UnitaryGate(U))
+    pfi_best = 0
+    for i in range(random_trail):
+        list_ang = np.random.random(12)*2*np.pi
+        t = np.random.random(3)
+        tx, ty, tz = t[0], t[1], t[2]
+        # print(list_ang)
+        U31, U32 = qiskit_U3(list_ang[0], list_ang[1], list_ang[2]), qiskit_U3(list_ang[3], list_ang[4], list_ang[5]),
+        U33, U34 = qiskit_U3(list_ang[6], list_ang[7], list_ang[8]),qiskit_U3(list_ang[9], list_ang[10], list_ang[11])
+
+        majhe_eso = Can(tx,ty,tz)
+        peeche_hat = np.kron(U31, U32)
+        egia_cholo = np.kron(U33, U34)
+        prodhan_gate = np.matmul(egia_cholo, np.matmul(majhe_eso, peeche_hat))
+
+        choi01 = Choi(UnitaryGate(prodhan_gate))
+        pfi = process_fidelity(choi0,choi01)
+
+        
+        if pfi > pfi_best:
+            pfi_best = pfi
+            qcirc_best_list = [U31, U32, majhe_eso, U33, U34]
+            print(i, pfi_best)
+    return pfi_best, qcirc_best_list
+
+def rand_2q_CAN_multi_unitary_decomp(U, random_trail):
+
+    """
+    KAJ HOINI
+    """
 
     choi0 = Choi(UnitaryGate(U))
     pfi_best = 0

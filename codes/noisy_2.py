@@ -21,6 +21,7 @@ gate_time = np.pi / 2.0
 param_amplitude = 1 - np.exp(-kappa * gate_time)
 param_phase = 1 - np.exp(-4 * delta * gate_time)
 error = noise.phase_amplitude_damping_error(param_amplitude, param_phase, 1)
+
 # print("Noise superop:\n\n", qi.SuperOp(error.to_instruction()).data)
 
 noise_model.add_all_qubit_quantum_error(error, ["rz"])
