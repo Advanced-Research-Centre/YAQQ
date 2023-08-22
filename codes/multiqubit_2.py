@@ -21,6 +21,8 @@ import numpy as np
 
 from tqdm import tqdm
 import scipy as sp
+import weylchamber
+from itertools import product
 
 from qiskit.extensions import UnitaryGate
 from qiskit.quantum_info import random_unitary
@@ -366,6 +368,49 @@ def gen_ds_randU(samples = 100, max_dim = 1, rand_dim = False):
             dim =  random.randrange(1,max_dim+1)    # TBD: Samples should be proportional to dimension instead of uniform, i.e. exponentially more higher dimension than lower dimensions
         ds.append(UnitaryGate(random_unitary(2**dim),label='RndU'+str(i)))
     return ds
+
+# ------------------------------------------------------------------------------------------------ #
+
+"""
+Data Set Generation: Equispaced non-local unitaries
+Ref: https://weylchamber.readthedocs.io/en/latest/API/weylchamber.coordinates.html#weylchamber.coordinates.point_in_weyl_chamber
+"""
+
+def gen_ds_equiNL(px = 10, max_dim = 2, rand_dim = False):
+    ds = []
+    if max_dim != 2:
+        print("gen_ds_equiNL works only for 2 qubits")
+        return ds
+    cx = np.linspace(0, 1, px)
+    cy = np.linspace(0, 0.5, int(px/2))
+    cz = np.linspace(0, 0.5, int(px/2))
+    gs = product(cx, cy, cz)
+    valid_points = 0
+    for can in gs:
+        # Enumerate points in the Weyl chamber
+        c = list(can)
+        c1,c2,c3 = c[0],c[1],c[2]
+        if weylchamber.point_in_weyl_chamber(c1,c2,c3):
+            valid_points+= 1
+            ds.append(UnitaryGate(weylchamber.canonical_gate(c1,c2,c3),label='RndU'+str(valid_points)))   
+    return ds
+
+# ------------------------------------------------------------------------------------------------ #
+
+"""
+Data Set Generation: Random non-local unitaries
+Ref: https://weylchamber.readthedocs.io/en/latest/API/weylchamber.coordinates.html#weylchamber.coordinates.random_gate
+"""
+
+def gen_ds_randNL(samples = 100, max_dim = 2, rand_dim = False):
+    ds = []
+    if max_dim != 2:
+        print("gen_ds_randNL works only for 2 qubits")
+        return ds
+    for i in range(samples):
+        ds.append(UnitaryGate(weylchamber.random_gate(),label='RndU'+str(i)))    
+    return ds
+
 
 # ------------------------------------------------------------------------------------------------ #
 
