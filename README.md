@@ -107,7 +107,7 @@ Feel free to report issues during build or execution. We also welcome suggestion
 - [ ] General 2 qubit gate with 15 free parameters
 - [ ] PySimpleGUI
 - [ ] Write paper
-- [ ] Use [setuptools](https://setuptools.pypa.io/en/latest/userguide/quickstart.html)
+- [x] Use [setuptools](https://setuptools.pypa.io/en/latest/userguide/quickstart.html), [twine](https://twine.readthedocs.io/en/stable/index.html) for PyPI
 - [ ] Plot gate set as points on [Weyl chamber](https://weylchamber.readthedocs.io/en/latest/tutorial.html), e.g., HxI, IxH, TxI, IxT, CX
 - [ ] Given a set of noisy gates fabricated on a quantum processor, treat them as non-noisy and compile algorithms with that set. the noisy gates are first purified (i.e. should be unitary, but not the desired one, so it does not solve the problem of depolarizing)
 

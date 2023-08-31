@@ -1,0 +1,10 @@
+COPYING
+README.md
+setup.py
+src/__init__.py
+src/yaqq.py
+src/yaqq.egg-info/PKG-INFO
+src/yaqq.egg-info/SOURCES.txt
+src/yaqq.egg-info/dependency_links.txt
+src/yaqq.egg-info/requires.txt
+src/yaqq.egg-info/top_level.txt
