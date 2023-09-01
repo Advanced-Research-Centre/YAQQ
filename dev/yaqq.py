@@ -1,4 +1,5 @@
-from yaqq_ds import GenerateDataSet
+from yaqq_ds import GenerateDataSet, VisualizeDataSet
+from yaqq_nusa import NovelUniversalitySearchAgent
 
 ########################################################################################################################################################################################################
 
@@ -10,6 +11,10 @@ if __name__ == "__main__":
     print("\n  Code repository: https://github.com/Advanced-Research-Centre/YAQQ  ")
     print("_____________________________________________________________________")
 
+    gds = GenerateDataSet()
+    vds = VisualizeDataSet()
+    ns = NovelUniversalitySearchAgent()
+
     devmode = input("\n  ===> Run Default Configuration? [Y/N] (def.: Y): ") or 'Y'
 
     if devmode == 'Y':
@@ -17,6 +22,7 @@ if __name__ == "__main__":
         yaqq_ds_dim = 2
         yaqq_ds_type = 4
         yaqq_ds_size = 10
+        yaqq_ds_reso = 23
 
     elif devmode == 'N':
 
@@ -47,8 +53,9 @@ if __name__ == "__main__":
             print("     2. Haar Random 2^nx2^n Unitaries")
             yaqq_ds_type = int(input("\n  ===> Enter Data Set Type (def.: 2): ") or 2)
 
-    gds = GenerateDataSet()
-    if yaqq_ds_dim == 2 and yaqq_ds_type == 4:
+    if devmode == 'Y':
+        yaqq_ds = gds.yaqq_gen_ds(yaqq_ds_dim, yaqq_ds_type, yaqq_ds_size, yaqq_ds_reso)
+    elif yaqq_ds_dim == 2 and yaqq_ds_type == 4:
         yaqq_ds_reso = int(input("\n  ===> Enter Weyl Chamber cx Spacing (def.: 23, 508 points): ") or 23)
         yaqq_ds = gds.yaqq_gen_ds(yaqq_ds_dim, yaqq_ds_type, None, yaqq_ds_reso)
     else:
@@ -58,41 +65,45 @@ if __name__ == "__main__":
     if yaqq_ds_dim <= 2:
         yaqq_ds_show = input("\n  ===> Visualize Data Set? [Y/N] (def.: N): ") or 'N'
         if yaqq_ds_show == 'Y':
-            pass
+            if yaqq_ds_dim == 1:
+                vds.vis_ds_Bloch(yaqq_ds)
+            else:
+                vds.vis_ds_Weyl(yaqq_ds)
 
+    cfn = 1
+    ns.cnfg_cfn(cfn)
+    ns.nusa(yaqq_ds)
 
-        #     vis_ds_randU(ds)    # Plots the states when the unitaries are applied to |0> state    
+    # print("\n  ===> Choose Gate Decomposition Method:")
+    # print("   Method 1 - Solovay-Kitaev Decomposition")
+    # print("   Method 2 - Random Decomposition")
+    # yaqq_dcmp = int(input("   Option (def.: 2): ") or 2)
 
-        # print("\n  ===> Choose Gate Decomposition Method:")
-        # print("   Method 1 - Solovay-Kitaev Decomposition")
-        # print("   Method 2 - Random Decomposition")
-        # yaqq_dcmp = int(input("   Option (def.: 2): ") or 2)
+    # print("\n  ===> Choose YAQQ Mode:")
+    # print("   Mode 1 - Compare GS2 (in code) w.r.t. GS1 (in code)")
+    # print("   Mode 2 - Generative novel GS2 w.r.t. GS1 (in code)")
+    # yaqq_mode = int(input("   Option (def.: 2): ")) or 2
+    # match yaqq_mode:
+    #     case 1: 
+    #         compare_gs(ds, yaqq_dcmp)
+    #     case 2: 
+    #         print("\n  ===> Choose Search Method:")
+    #         print("   Method 1 - Random Gate Set Search")
+    #         print("   Method 2 - U3 Angles Optimize with Multiple Random Initialization")
+    #         yaqq_search = int(input("   Option (def.: 1): ")) or 1
+    #         print()
 
-        # print("\n  ===> Choose YAQQ Mode:")
-        # print("   Mode 1 - Compare GS2 (in code) w.r.t. GS1 (in code)")
-        # print("   Mode 2 - Generative novel GS2 w.r.t. GS1 (in code)")
-        # yaqq_mode = int(input("   Option (def.: 2): ")) or 2
-        # match yaqq_mode:
-        #     case 1: 
-        #         compare_gs(ds, yaqq_dcmp)
-        #     case 2: 
-        #         print("\n  ===> Choose Search Method:")
-        #         print("   Method 1 - Random Gate Set Search")
-        #         print("   Method 2 - U3 Angles Optimize with Multiple Random Initialization")
-        #         yaqq_search = int(input("   Option (def.: 1): ")) or 1
-        #         print()
-
-        #         match yaqq_search:
-        #             case 1: 
-        #                 generate_gs_random(ds, yaqq_dcmp)
-        #             case 2: 
-        #                 generate_gs_optimize(ds, yaqq_dcmp)
-        #             case _: 
-        #                 print("Invalid option")
-        #                 exit(1)   
-        #     case _ : 
-        #         print("Invalid option")
-        #         exit(1)   
+    #         match yaqq_search:
+    #             case 1: 
+    #                 generate_gs_random(ds, yaqq_dcmp)
+    #             case 2: 
+    #                 generate_gs_optimize(ds, yaqq_dcmp)
+    #             case _: 
+    #                 print("Invalid option")
+    #                 exit(1)   
+    #     case _ : 
+    #         print("Invalid option")
+    #         exit(1)   
     
     print("\n_____________________________________________________________________")
     print("\n--------------------- Thank you for using YAQQ. ---------------------")

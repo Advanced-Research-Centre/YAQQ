@@ -1,5 +1,5 @@
 from qiskit import QuantumCircuit
-from qiskit.quantum_info import random_statevector, random_unitary, Operator
+from qiskit.quantum_info import random_statevector, random_unitary, Operator, Statevector
 from qiskit.extensions import UnitaryGate
 import random
 import math
@@ -7,6 +7,10 @@ from astropy.coordinates import cartesian_to_spherical
 import weylchamber
 import numpy as np
 from itertools import product
+import qutip as qt
+from qutip.measurement import measurement_statistics
+import matplotlib.pyplot as plt
+from weylchamber.visualize import WeylChamber
 
 class GenerateDataSet:
 
@@ -124,4 +128,47 @@ class GenerateDataSet:
                 ds.append(UnitaryGate(weylchamber.canonical_gate(c1,c2,c3),label='RndU'+str(valid_points)))   
         return ds
     
+    # ------------------------------------------------------------------------------------------------ #
+
+class VisualizeDataSet:
+
+    # ------------------------------------------------------------------------------------------------ #
+
+    def rgb_to_hex(self, r, g, b):
+        return '#{:02x}{:02x}{:02x}'.format(r, g, b)
+
+    # ------------------------------------------------------------------------------------------------ #
+
+    def vis_ds_Bloch(self, ds):
+        b = qt.Bloch()
+        b.point_marker = ['o']
+        b.point_size = [20]
+        samples = len(ds)
+        color = []
+        for i in range(samples):
+            qc = QuantumCircuit(1)
+            qc.append(ds[i], [0])
+            sv = Statevector(qc).data
+            b.add_states(qt.Qobj(sv), kind='point')
+            _, _, pX = measurement_statistics(qt.Qobj(sv), qt.sigmax())
+            _, _, pY = measurement_statistics(qt.Qobj(sv), qt.sigmay())
+            _, _, pZ = measurement_statistics(qt.Qobj(sv), qt.sigmaz())
+            color.append(self.rgb_to_hex(int(pX[0]*255),int(pY[0]*255),int(pZ[0]*255)))
+            
+        b.point_color = color
+        b.render()
+        plt.show()
+
+    # ------------------------------------------------------------------------------------------------ #
+
+    def vis_ds_Weyl(self, ds):
+        w = WeylChamber()
+        samples = len(ds)
+        color = []
+        for i in range(samples):
+            c1, c2, c3 = weylchamber.c1c2c3(ds[i].to_matrix())
+            w.add_point(c1,c2,c3)
+        w.plot()
+        plt.show()
+
     # ------------------------------------------------------------------------------------------------ #
