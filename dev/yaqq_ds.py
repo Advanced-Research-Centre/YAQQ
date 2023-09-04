@@ -162,13 +162,60 @@ class VisualizeDataSet:
     # ------------------------------------------------------------------------------------------------ #
 
     def vis_ds_Weyl(self, ds):
-        w = WeylChamber()
-        samples = len(ds)
-        color = []
-        for i in range(samples):
-            c1, c2, c3 = weylchamber.c1c2c3(ds[i].to_matrix())
-            w.add_point(c1,c2,c3)
-        w.plot()
+        # w = WeylChamber()
+        # samples = len(ds)
+        # color = []
+        # for i in range(samples):
+        #     c1, c2, c3 = weylchamber.c1c2c3(ds[i].to_matrix())
+        #     w.add_point(c1,c2,c3)
+        # w.plot()
+        # plt.show()
+
+        fig = plt.figure()
+        ax = fig.add_subplot(projection='3d')
+
+        for i in ds:
+            c1, c2, c3 = weylchamber.c1c2c3(i.to_matrix())
+            if weylchamber.point_in_weyl_chamber(c1,c2,c3):
+                ax.scatter(c1, c2, c3, s=2, c=self.rgb_to_hex(255-int(255*(math.cos(c1*2*math.pi)+1)/2),255-int(255*(math.cos(c2*2*math.pi)+1)/2),255-int(255*(math.cos(c3*2*math.pi)+1)/2)))
+            
+        ax.plot3D([0,0.5],[0,0.5],[0,0.5],linestyle='--',color='black')       # Isotropic exchange Swap-alpha gates
+        ax.plot3D([1,0.5],[0,0.5],[0,0.5],linestyle='--',color='black')       # Isotropic exchange Swap-alpha gates 
+        ax.plot3D([0.5,0.5],[0.5,0.5],[0,0.5],linestyle='--',color='black')   # Parameterized Swap gates
+        ax.plot3D([0,1],[0,0],[0,0],linestyle='--',color='black')             # Ising gates
+        ax.plot3D([0,0.5],[0,0.5],[0,0],linestyle='--',color='black')         # XY gates
+        ax.plot3D([1,0.5],[0,0.5],[0,0],linestyle='--',color='black')         # XY gates
+        # Perfect Entangler boundary
+        ax.plot3D([0.25,0.75],[0.25,0.25],[0.25,0.25],linestyle=':',color='grey')
+        ax.plot3D([0.25,0.5],[0.25,0],[0.25,0],linestyle=':',color='grey')
+        ax.plot3D([0.5,0.75],[0,0.25],[0,0.25],linestyle=':',color='grey')
+        ax.plot3D([0.25,0.25],[0.25,0.25],[0.25,0],linestyle=':',color='grey')
+        ax.plot3D([0.75,0.75],[0.25,0.25],[0.25,0],linestyle=':',color='grey')
+        ax.plot3D([0.5,0.25],[0,0.25],[0,0],linestyle=':',color='grey')
+        ax.plot3D([0.5,0.75],[0,0.25],[0,0],linestyle=':',color='grey')
+        ax.plot3D([0.25,0.5],[0.25,0.5],[0.25,0],linestyle=':',color='grey')
+        ax.plot3D([0.75,0.5],[0.25,0.5],[0.25,0],linestyle=':',color='grey')
+
+        ax.view_init(elev=15, azim=-55)
+        tmp_planes = ax.zaxis._PLANES 
+        ax.zaxis._PLANES = ( tmp_planes[2], tmp_planes[3], 
+                            tmp_planes[0], tmp_planes[1], 
+                            tmp_planes[4], tmp_planes[5])
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
+        ax.set_zlim(0, 1)
+        ax.xaxis.set_ticks([0, 0.25, 0.5, 0.75, 1])
+        ax.yaxis.set_ticks([0, 0.25, 0.5, 0.75, 1])
+        ax.zaxis.set_ticks([0, 0.25, 0.5, 0.75, 1])
+        ax.set_xlabel('$c_1/\pi$')
+        ax.set_ylabel('$c_2/\pi$')
+        ax.zaxis.set_rotate_label(False) 
+        ax.set_zlabel('$c_3/\pi$', rotation=90)
+        # ax.grid(False)
+        ax.xaxis.pane.fill = False
+        ax.yaxis.pane.fill = False
+        ax.zaxis.pane.fill = False
+
         plt.show()
 
     # ------------------------------------------------------------------------------------------------ #
