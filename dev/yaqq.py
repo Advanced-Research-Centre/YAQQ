@@ -23,6 +23,10 @@ if __name__ == "__main__":
         yaqq_ds_type = 4
         yaqq_ds_size = 10
         yaqq_ds_reso = 23
+        yaqq_ds = gds.yaqq_gen_ds(yaqq_ds_dim, yaqq_ds_type, yaqq_ds_size, yaqq_ds_reso)
+
+        yaqq_cf_wgts = [1,1,1,1,0]
+        ns.cnfg_cfn(yaqq_cf_wgts)
 
     elif devmode == 'N':
 
@@ -53,26 +57,26 @@ if __name__ == "__main__":
             print("     2. Haar Random 2^nx2^n Unitaries")
             yaqq_ds_type = int(input("\n  ===> Enter Data Set Type (def.: 2): ") or 2)
 
-    if devmode == 'Y':
-        yaqq_ds = gds.yaqq_gen_ds(yaqq_ds_dim, yaqq_ds_type, yaqq_ds_size, yaqq_ds_reso)
-    elif yaqq_ds_dim == 2 and yaqq_ds_type == 4:
-        yaqq_ds_reso = int(input("\n  ===> Enter Weyl Chamber cx Spacing (def.: 23, 508 points): ") or 23)
-        yaqq_ds = gds.yaqq_gen_ds(yaqq_ds_dim, yaqq_ds_type, None, yaqq_ds_reso)
-    else:
-        yaqq_ds_size = int(input("\n  ===> Enter Data Set Size (def.: 500): ") or 500)
-        yaqq_ds = gds.yaqq_gen_ds(yaqq_ds_dim, yaqq_ds_type, yaqq_ds_size, None)
+        if yaqq_ds_dim == 2 and yaqq_ds_type == 4:
+            yaqq_ds_reso = int(input("\n  ===> Enter Weyl Chamber cx Spacing (def.: 23, 508 points): ") or 23)
+            yaqq_ds = gds.yaqq_gen_ds(yaqq_ds_dim, yaqq_ds_type, None, yaqq_ds_reso)
+        else:
+            yaqq_ds_size = int(input("\n  ===> Enter Data Set Size (def.: 508): ") or 508)
+            yaqq_ds = gds.yaqq_gen_ds(yaqq_ds_dim, yaqq_ds_type, yaqq_ds_size, None)
 
-    if yaqq_ds_dim <= 2:
-        yaqq_ds_show = input("\n  ===> Visualize Data Set? [Y/N] (def.: N): ") or 'N'
-        if yaqq_ds_show == 'Y':
-            if yaqq_ds_dim == 1:
-                vds.vis_ds_Bloch(yaqq_ds)
-            else:
-                vds.vis_ds_Weyl(yaqq_ds)
+        if yaqq_ds_dim <= 2:
+            yaqq_ds_show = input("\n  ===> Visualize Data Set? [Y/N] (def.: N): ") or 'N'
+            if yaqq_ds_show == 'Y':
+                if yaqq_ds_dim == 1:
+                    vds.vis_ds_Bloch(yaqq_ds)
+                else:
+                    vds.vis_ds_Weyl(yaqq_ds)
 
-    cfn = 1
-    ns.cnfg_cfn(cfn)
-    ns.nusa(yaqq_ds)
+        yaqq_cf_wgts = [int(i) for i in (input("\n  ===> Enter Cost Function Weights (def.: [1,1,1,1,0]): ") or '1,1,1,1,0').split(',')]
+        print("\n  ===> Cost Function Weights: ", yaqq_cf_wgts)
+        ns.cnfg_cfn(yaqq_cf_wgts)
+
+    # ns.nusa(yaqq_ds)
 
     # print("\n  ===> Choose Gate Decomposition Method:")
     # print("   Method 1 - Solovay-Kitaev Decomposition")
