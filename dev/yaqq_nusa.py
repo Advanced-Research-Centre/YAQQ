@@ -3,6 +3,8 @@ from qiskit import QuantumCircuit
 from qiskit.quantum_info import random_unitary, Choi, process_fidelity
 from qiskit.extensions import UnitaryGate
 import random
+from skt import gen_basis_seq, UGate, UdgGate
+from qiskit.transpiler.passes.synthesis import SolovayKitaev
 
 class NovelUniversalitySearchAgent:
 
@@ -67,9 +69,14 @@ class NovelUniversalitySearchAgent:
         return gs, gs_gates
       
     # ------------------------------------------------------------------------------------------------ #
- 
-    def dcmp_rand(self, choi0, gs, trials, max_depth):
 
+    """
+    Given an unitary and a gate set, use trials to find a circuit using the gate set that is close to the unitary
+    """
+
+    def dcmp_rand(self, U, gs, trials, max_depth):
+
+        choi0 = Choi(U)
         dim = int(np.log2(choi0.dim[0]))
         pfi_best = 0
         dep_best = 0
@@ -93,22 +100,44 @@ class NovelUniversalitySearchAgent:
 
     # ------------------------------------------------------------------------------------------------ #
 
+    def skt_gs(self, gs):
+        gs_skt = []
+        for g in gs.keys():
+            gs_skt.append(UGate(g,gs[g].to_matrix()))
+        return gs_skt
+    
+    # ------------------------------------------------------------------------------------------------ #
+
+    def dcmp_skt(self, U, skt_obj):
+
+        choi0 = Choi(U)
+        dim = int(np.log2(choi0.dim[0]))
+        qc0 = QuantumCircuit(dim)
+        qc0.append(U,list(range(dim)))
+        qc01 = skt_obj(qc0)
+        # choi0 = Choi(qc0)
+        choi01 = Choi(qc01)
+        pfi = process_fidelity(choi0,choi01)
+        dep = qc01.depth()
+
+        return pfi, dep, qc01
+
+    # ------------------------------------------------------------------------------------------------ #
+
     def decompose_u(self):
 
         # Define Unitary to decompose here
-        dim = 3
+        dim = 1
         U = UnitaryGate(random_unitary(2**dim),label='RndU')
-        cU = Choi(U)
-
+        
         # Define Gate Set to decompose into here
-        gs, _ = self.def_GS_standard_2q()
+        gs, _ = self.def_GS_standard_1q()
 
         # Decompose Unitary into Gate Set
 
         if dim > 2 and self.d_nq == 1:      # Random n-qubit decomposition
-            # Decompose using gates in gs1, no further decompositions required
-            # This is the least analytical decomposition
-            pfi, dep, qcirc = self.dcmp_rand(cU, gs, trials = 500, max_depth = 500)
+            # Decompose using gates in gs1, no further decompositions required (this is the least analytical decomposition)
+            pfi, dep, qcirc = self.dcmp_rand(U, gs, trials = 500, max_depth = 500)
             print(pfi, dep)
             print(qcirc)
             pass
@@ -120,8 +149,7 @@ class NovelUniversalitySearchAgent:
                 # Analytically decompose using CAN 2-qubit gates in gs1, need to further decompose 1-qubit gates
                 if self.d_1q == 1:                  # Random 1-qubit decomposition
                     pass
-                elif self.d_1q == 2:                # Solovay-Kitaev decomposition
-                    # This is the most analytical decomposition
+                elif self.d_1q == 2:                # Solovay-Kitaev decomposition (this is the most analytical decomposition)
                     pass
             if self.d_1q == 1:                  # Random 1-qubit decomposition
                 pass
@@ -131,7 +159,7 @@ class NovelUniversalitySearchAgent:
 
         if dim == 2 and self.d_2q == 1:     # Random 2-qubit decomposition
             # Decompose using gates in gs1, no further decompositions required
-            pfi, dep, qcirc = self.dcmp_rand(cU, gs, trials = 500, max_depth = 500)
+            pfi, dep, qcirc = self.dcmp_rand(U, gs, trials = 500, max_depth = 500)
             print(pfi, dep)
             print(qcirc)
             pass
@@ -143,12 +171,16 @@ class NovelUniversalitySearchAgent:
                 pass
 
         if dim == 1 and self.d_1q == 1:     # Random 1-qubit decomposition
-            pfi, dep, qcirc = self.dcmp_rand(cU, gs, trials = 500, max_depth = 500)
+            pfi, dep, qcirc = self.dcmp_rand(U, gs, trials = 500, max_depth = 500)
             print(pfi, dep)
             print(qcirc)
         elif dim == 1 and self.d_1q == 2:   # Solovay-Kitaev decomposition
-            pass
-
+            gbs = gen_basis_seq()
+            skt_obj = SolovayKitaev(recursion_degree = 3, basic_approximations = gbs.generate_basic_approximations(self.skt_gs(gs)))  # declare SKT object, larger recursion depth increases the accuracy and length of the decomposition
+            pfi, dep, qcirc = self.dcmp_skt(U, skt_obj)
+            print(pfi, dep)
+            print(qcirc)
+            
         return
     
     # ------------------------------------------------------------------------------------------------ #

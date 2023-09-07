@@ -19,7 +19,7 @@ if __name__ == "__main__":
 
     if devmode == 'Y':
         
-        yaqq_cf_dcmp = [1,1,1]
+        yaqq_cf_dcmp = [2,1,1]
         ns.cnfg_dcmp(yaqq_cf_dcmp)
 
         ns.decompose_u()

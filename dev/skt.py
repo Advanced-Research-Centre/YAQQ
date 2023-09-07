@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 import warnings
 import collections
@@ -142,30 +141,6 @@ class gen_basis_seq:
         return sequences
 
 
-# ===> Define gateset GS1 (standard gates via U-gate)
-
-# h_U_mat = np.array([[1, 1], [1, -1]], dtype=complex) / np.sqrt(2)
-# t_U_mat = np.array([[1, 0], [0, (1+1j)/np.sqrt(2)]], dtype=complex)
-# tdg_U_mat = np.array([[1, 0], [0, (1-1j)/np.sqrt(2)]], dtype=complex)
-# Uh = UGate("Uh", h_U_mat)
-
-# # print(Uh.name)
-# # print(Uh.label)
-# # Ut = UGate("Ut", t_U_mat)
-# # Utdg = UGate("Utdg", tdg_U_mat)
-# # CX = CXGate("CX")
-# # agent1_gateset = [Uh, Ut, Utdg]
-
-# gs1 = {}    
-# gs1['H'] = UnitaryGate(h_U_mat,label='H')
-# print(gs1['H'].name)
-# print(gs1['H'].label)
-# print(gs1['H'])
-# gs1['T'] = UnitaryGate(t_U_mat,label='T')
-# gs1['Tdg'] = UnitaryGate(tdg_U_mat,label='Tdg')
-# agent1_gateset = [gs1['H'], gs1['T'], gs1['Tdg']]
-
-
 # from qiskit.transpiler.passes.synthesis import SolovayKitaev
 
 # gbs = gen_basis_seq()
@@ -178,4 +153,3 @@ class gen_basis_seq:
 # print(len(agent1_gateseq))
 # for i in agent1_gateseq:
 #     print(i.name)
-
