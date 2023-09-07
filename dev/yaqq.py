@@ -19,25 +19,64 @@ if __name__ == "__main__":
 
     if devmode == 'Y':
         
-        yaqq_ds_dim = 2
-        yaqq_ds_type = 4
-        yaqq_ds_size = 10
-        yaqq_ds_reso = 23
-        yaqq_ds = gds.yaqq_gen_ds(yaqq_ds_dim, yaqq_ds_type, yaqq_ds_size, yaqq_ds_reso)
+        yaqq_cf_dcmp = [1,1,1]
+        ns.cnfg_dcmp(yaqq_cf_dcmp)
 
-        yaqq_cf_wgts = [1,1,1,1,0]
-        ns.cnfg_cfn(yaqq_cf_wgts)
+        ns.decompose_u()
+         
+        # yaqq_ds_dim = 2
+        # yaqq_ds_type = 4
+        # yaqq_ds_size = 10
+        # yaqq_ds_reso = 23
+        # yaqq_ds = gds.yaqq_gen_ds(yaqq_ds_dim, yaqq_ds_type, yaqq_ds_size, yaqq_ds_reso)
+        
+        # ns.compare_gs()
+
+        # yaqq_cf_wgts = [1,1,1,1,0]
+        # ns.cnfg_wgts(yaqq_cf_wgts)
+
+        # yaqq_cf_ngs = ['R1','R1','R1']
+        # ns.nusa(yaqq_cf_ngs)
 
     elif devmode == 'N':
 
+        # TBD: Checks for invalid configurations
+
         print("\n  YAQQ has 4 configuration options:")
-        print("     1. Data Dimension, Type and Size")
-        print("     2. Cost Function")
-        print("     3. Gate Decomposition Method")
-        print("     4. Operation Mode and Search Technique")
+        print("     1. Operation Mode")
+        print("     2. Gate Decomposition Method")
+        print("     3. Cost Function")
+        print("     4. Data Dimension, Type and Size")
+
+        print("\n Operation Mode:")
+        print("   1. Generative novel GS2 w.r.t. GS1 (in code)")
+        print("   2. Compare GS2 (in code) w.r.t. GS1 (in code)")
+        print("   3. Decompose a n-qubit U (in code) w.r.t. GS1 (in code)")
+        yaqq_mode = int(input("\n  ===> Enter YAQQ Mode (def.: 1): ") or 1)
+
+        yaqq_cf_dcmp = []
+        print("\n Gate Decomposition Method for Dimension = 1:")
+        print("     1. Random Decomposition (trails auto-scale w.r.t. dimension)")
+        print("     2. Solovay-Kitaev Decomposition")
+        yaqq_cf_dcmp.append(int(input("\n  ===> Enter Gate Decomposition Method for Dimension = 2 (def.: 2): ") or 2))
+        print("\n Gate Decomposition Method for Dimension = 2:")
+        print("     1. Random Decomposition (trails auto-scale w.r.t. dimension)")
+        print("     2. Cartan Decomposition")
+        yaqq_cf_dcmp.append(int(input("\n  ===> Enter Gate Decomposition Method for Dimension = 2 (def.: 2): ") or 2))
+        print("\n Gate Decomposition Method for Dimension = 3+:")
+        print("     1. Random Decomposition (trails auto-scale w.r.t. dimension)")
+        print("     2. Quantum Shannon Decomposition")
+        yaqq_cf_dcmp.append(int(input("\n  ===> Enter Gate Decomposition Method for Dimension = 3+ (def.: 2): ") or 2))
+        ns.cnfg_dcmp(yaqq_cf_dcmp)
+
+        if yaqq_mode == 3:
+            ns.decompose_u()    # Dataset and costfunction selection not required for this mode
+            print("\n_____________________________________________________________________")
+            print("\n--------------------- Thank you for using YAQQ. ---------------------")
+            print("_____________________________________________________________________")
+            exit()
 
         yaqq_ds_dim = int(input("\n  ===> Enter Data Set Dimension (def.: 2): ") or 2)        
-        
         if yaqq_ds_dim == 1:
             print("\n Data Set Types for Dimension = 1:")
             print("     1. Haar Random 1-qubit pure States")
@@ -72,45 +111,36 @@ if __name__ == "__main__":
                 else:
                     vds.vis_ds_Weyl(yaqq_ds)
 
+        if yaqq_mode == 2:
+            ns.compare_gs()    # Costfunction selection not required for this mode
+            print("\n_____________________________________________________________________")
+            print("\n--------------------- Thank you for using YAQQ. ---------------------")
+            print("_____________________________________________________________________")
+            exit()
+
         yaqq_cf_wgts = [int(i) for i in (input("\n  ===> Enter Cost Function Weights (def.: [1,1,1,1,0]): ") or '1,1,1,1,0').split(',')]
         print("\n  ===> Cost Function Weights: ", yaqq_cf_wgts)
-        ns.cnfg_cfn(yaqq_cf_wgts)
+        ns.cnfg_wgts(yaqq_cf_wgts)
 
-    # ns.nusa(yaqq_ds)
+        print("\n Novel Gate Set Composition:")
+        print("   R1: Haar Random 1-qubit Unitary")
+        print("   P1: Parametric 1-qubit Unitary (IBM U3)")
+        print("   G1: Golden 1-qubit Unitary")
+        print("   SG1: Super Golden 1-qubit Unitary")
+        print("   T1: T Gate 1-qubit Unitary")
+        print("   H1: H (Hadamard) Gate 1-qubit Unitary")
+        if yaqq_ds_dim >= 2:
+            print("   R2: Haar Random 2-qubit Unitary")
+            print("   NL2: Non-local 2-qubit Unitary")
+            print("   CX2: CNOT Gate 2-qubit Unitary")
+            print("   B2: B (Berkeley) Gate 2-qubit Unitary")
+            print("   PE2: Perfect Entangler 2-qubit Unitary")
+            print("   SPE2: Special Perfect Entangler 2-qubit Unitary")
+        yaqq_cf_ngs = (input("\n  ===> Enter Get Set (def.: [R1,R1,R1]): ") or 'R1,R1,R1').split(',')
 
-    # print("\n  ===> Choose Gate Decomposition Method:")
-    # print("   Method 1 - Solovay-Kitaev Decomposition")
-    # print("   Method 2 - Random Decomposition")
-    # yaqq_dcmp = int(input("   Option (def.: 2): ") or 2)
-
-    # print("\n  ===> Choose YAQQ Mode:")
-    # print("   Mode 1 - Compare GS2 (in code) w.r.t. GS1 (in code)")
-    # print("   Mode 2 - Generative novel GS2 w.r.t. GS1 (in code)")
-    # yaqq_mode = int(input("   Option (def.: 2): ")) or 2
-    # match yaqq_mode:
-    #     case 1: 
-    #         compare_gs(ds, yaqq_dcmp)
-    #     case 2: 
-    #         print("\n  ===> Choose Search Method:")
-    #         print("   Method 1 - Random Gate Set Search")
-    #         print("   Method 2 - U3 Angles Optimize with Multiple Random Initialization")
-    #         yaqq_search = int(input("   Option (def.: 1): ")) or 1
-    #         print()
-
-    #         match yaqq_search:
-    #             case 1: 
-    #                 generate_gs_random(ds, yaqq_dcmp)
-    #             case 2: 
-    #                 generate_gs_optimize(ds, yaqq_dcmp)
-    #             case _: 
-    #                 print("Invalid option")
-    #                 exit(1)   
-    #     case _ : 
-    #         print("Invalid option")
-    #         exit(1)   
-    
-    print("\n_____________________________________________________________________")
-    print("\n--------------------- Thank you for using YAQQ. ---------------------")
-    print("_____________________________________________________________________")
+        ns.nusa(yaqq_cf_ngs)
+        print("\n_____________________________________________________________________")
+        print("\n--------------------- Thank you for using YAQQ. ---------------------")
+        print("_____________________________________________________________________")
 
 ########################################################################################################################################################################################################
