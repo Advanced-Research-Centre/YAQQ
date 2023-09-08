@@ -30,7 +30,7 @@ class GenerateDataSet:
                 ds = self.gen_ds_fiboS(ds_size)
             elif ds_dim == 2 and ds_type == 3:
                 ds = self.gen_ds_randNL(ds_size)
-            print("\n  ===> YAQQ Data Set Generated for Dimension =", ds_dim, "Type =", ds_type, "Size =", ds_size)
+            print("\n  ===> YAQQ Data Set Generated for Dimension = "+str(ds_dim)+", Type = "+str(ds_type)+", Size = "+str(ds_size))
 
         return ds
 
@@ -236,7 +236,6 @@ class ResultsPlotSave:
 
     def plot_compare_gs(self, gs1, gs1_gates, pf1, cd1, gs2, gs2_gates, pf2, cd2, pfivt = False):
         
-        print(pf1, pf2, cd1, cd2)
         avg_fid_gs01 = np.mean(pf1)
         avg_fid_gs02 = np.mean(pf2)
         avg_dep_gs01 = np.mean(cd1)

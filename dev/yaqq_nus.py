@@ -6,8 +6,9 @@ import random
 from skt import gen_basis_seq, UGate, UdgGate
 from qiskit.transpiler.passes.synthesis import SolovayKitaev
 from tqdm import tqdm
+import time
 
-class NovelUniversalitySearchAgent:
+class NovelUniversalitySearch:
 
     # ------------------------------------------------------------------------------------------------ #
 
@@ -22,75 +23,46 @@ class NovelUniversalitySearchAgent:
         self.d_nq = dcmp[2]    # Decomposition method for 3 or more qubit gates     [rand, qsd]
 
         return
-    
+      
     # ------------------------------------------------------------------------------------------------ #
 
-    """
-    Configure the weights of the elements of the cost function
-    """
+    def def_gs(self, gs_cfg):
 
-    def cnfg_wgts(self, wgts):
-
-        self.w_apf = wgts[0]   # Weight of average process fidelity
-        self.w_npf = wgts[1]   # Weight of novelty of process fidelity
-        self.w_acd = wgts[2]   # Weight of average circuit depth
-        self.w_ncd = wgts[3]   # Weight of novelty of circuit depth
-        self.w_agf = wgts[4]   # Weight of average gate fabrication
-
-        return
-
-    # ------------------------------------------------------------------------------------------------ #
-
-    """
-    Define standard 1-qubit gateset: H1, T1, TD1
-    """
-
-    def def_GS_standard_1q(self):
-
-        h_U_mat = np.array([[1, 1], [1, -1]], dtype=complex) / np.sqrt(2)
-        t_U_mat = np.array([[1, 0], [0, (1+1j)/np.sqrt(2)]], dtype=complex)
-        tdg_U_mat = np.array([[1, 0], [0, (1-1j)/np.sqrt(2)]], dtype=complex)
-        gs = {}    
-        gs['H'] = UnitaryGate(h_U_mat,label='H')
-        gs['T'] = UnitaryGate(t_U_mat,label='T')
-        gs['Tdg'] = UnitaryGate(tdg_U_mat,label='Tdg')
-        gs_gates = ','.join(list(gs.keys()))
-
-        return gs, gs_gates
-    # ------------------------------------------------------------------------------------------------ #
-
-    """
-    Define random 1-qubit gateset: R1, R1, R1
-    """
-
-    def def_GS_random_1q(self):
- 
-        U1_mat = random_unitary(2).data
-        U2_mat = random_unitary(2).data
-        U3_mat = random_unitary(2).data   
-        gs = {}   
-        gs['U1'] = UnitaryGate(U1_mat,label='U1') 
-        gs['U2'] = UnitaryGate(U2_mat,label='U2')
-        gs['U3'] = UnitaryGate(U3_mat,label='U3')
-        gs_gates = ','.join(list(gs.keys()))
-
-        return gs, gs_gates
-
-    # ------------------------------------------------------------------------------------------------ #
-
-    """
-    Define standard 2-qubit gateset: H, T, CX
-    """
-
-    def def_GS_standard_2q(self):
-
-        h_U_mat = np.array([[1, 1], [1, -1]], dtype=complex) / np.sqrt(2)
-        t_U_mat = np.array([[1, 0], [0, (1+1j)/np.sqrt(2)]], dtype=complex)
-        cx_U_mat = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]], dtype=complex)
-        gs = {}    
-        gs['H'] = UnitaryGate(h_U_mat,label='H')
-        gs['T'] = UnitaryGate(t_U_mat,label='T')
-        gs['CX'] = UnitaryGate(cx_U_mat,label='CX')
+        gs = {}
+        gno = 0
+        for g in gs_cfg:
+            gno += 1
+            match g:
+                case 'R1':      # R1: Haar Random 1-qubit Unitary
+                    U = random_unitary(2).data
+                case 'P1':      # P1: Parametric 1-qubit Unitary (IBM U3)
+                    U = random_unitary(2).data  # TBD
+                case 'G1':      # G1: Golden 1-qubit Unitary
+                    U = random_unitary(2).data  # TBD
+                case 'SG1':     # SG1: Super Golden 1-qubit Unitary
+                    U = random_unitary(2).data  # TBD
+                case 'T1':      # T1: T Gate 1-qubit Unitary
+                    U = np.array([[1, 0], [0, (1+1j)/np.sqrt(2)]], dtype=complex)
+                case 'TD1':     # TD1: T-dagger Gate 1-qubit Unitary
+                    U = np.array([[1, 0], [0, (1-1j)/np.sqrt(2)]], dtype=complex)
+                case 'H1':      # H1: H (Hadamard) Gate 1-qubit Unitary
+                    U = np.array([[1, 1], [1, -1]], dtype=complex) / np.sqrt(2)
+                case 'R2':      # R2: Haar Random 2-qubit Unitary
+                    U = random_unitary(4).data
+                case 'NL2':     # NL2: Non-local 2-qubit Unitary
+                    U = random_unitary(2).data  # TBD
+                case 'CX2':     # CX2: CNOT Gate 2-qubit Unitary
+                    U = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]], dtype=complex)
+                case 'B2':      # B2: B (Berkeley) Gate 2-qubit Unitary
+                    U = random_unitary(2).data  # TBD
+                case 'PE2':     # PE2: Perfect Entangler 2-qubit Unitary
+                    U = random_unitary(2).data  # TBD
+                case 'SPE2':    # SPE2: Special Perfect Entangler 2-qubit Unitary
+                    U = random_unitary(2).data  # TBD
+                case _:
+                    print("Invalid Gate Set Configuration")
+                    exit()
+            gs[str(gno)+g] = UnitaryGate(U, label=str(gno)+g) 
         gs_gates = ','.join(list(gs.keys()))
 
         return gs, gs_gates
@@ -168,40 +140,40 @@ class NovelUniversalitySearchAgent:
     def dcmp_U_gs(self, U, gs):
         
         dim = int(np.log2(Choi(U).dim[0]))
+        rand_trials = 5
+        rand_max_depth = 500
 
         if dim > 2 and self.d_nq == 1:      # Random n-qubit decomposition
             # Decompose using gates in gs1, no further decompositions required (this is the least analytical decomposition)
-            pfi, dep, qcirc = self.dcmp_rand(U, gs, trials = 500, max_depth = 500)
-            pass
+            pfi, dep, qcirc = self.dcmp_rand(U, gs, trials = rand_trials, max_depth = rand_max_depth)
         elif dim > 2 and self.d_nq == 2:    # QSD decomposition
             # Analytically decompose using CX, Ry, Rz. Need to further decompose both 2-qubit and 1-qubit gates
             if self.d_2q == 1:                  # Random 2-qubit decomposition
-                pass
+                pass  # TBD
             elif self.d_2q == 2:                # Cartan decomposition
                 # Analytically decompose using CAN 2-qubit gates in gs1, need to further decompose 1-qubit gates
                 if self.d_1q == 1:                  # Random 1-qubit decomposition
-                    pass
+                    pass  # TBD
                 elif self.d_1q == 2:                # Solovay-Kitaev decomposition (this is the most analytical decomposition)
-                    pass
+                    pass  # TBD
             if self.d_1q == 1:                  # Random 1-qubit decomposition
-                pass
+                pass  # TBD
             elif self.d_1q == 2:                # Solovay-Kitaev decomposition
                 # convert gs to SKT UGate
-                pass
+                pass  # TBD
 
         if dim == 2 and self.d_2q == 1:     # Random 2-qubit decomposition
             # Decompose using gates in gs1, no further decompositions required
-            pfi, dep, qcirc = self.dcmp_rand(U, gs, trials = 500, max_depth = 500)
-            pass
+            pfi, dep, qcirc = self.dcmp_rand(U, gs, trials = rand_trials, max_depth = rand_max_depth)
         elif dim == 2 and self.d_2q == 2:   # Cartan decomposition
             # Analytically decompose using CAN 2-qubit gates in gs1, need to further decompose 1-qubit gates
             if self.d_1q == 1:                  # Random 1-qubit decomposition
-                pass
+                pass  # TBD
             elif self.d_1q == 2:                # Solovay-Kitaev decomposition
-                pass
+                pass  # TBD
 
         if dim == 1 and self.d_1q == 1:     # Random 1-qubit decomposition
-            pfi, dep, qcirc = self.dcmp_rand(U, gs, trials = 500, max_depth = 500)
+            pfi, dep, qcirc = self.dcmp_rand(U, gs, trials = rand_trials, max_depth = rand_max_depth)
         elif dim == 1 and self.d_1q == 2:   # Solovay-Kitaev decomposition
             gbs = gen_basis_seq()
             skt_obj = SolovayKitaev(recursion_degree = 3, basic_approximations = gbs.generate_basic_approximations(self.skt_gs(gs)))  # declare SKT object, larger recursion depth increases the accuracy and length of the decomposition
@@ -214,16 +186,17 @@ class NovelUniversalitySearchAgent:
     def decompose_u(self):
 
         # Define Unitary to decompose here
-        dim = 1
+        dim = 3
         U = UnitaryGate(random_unitary(2**dim),label='RndU')
         
         # Define Gate Set to decompose into here
-        gs, _ = self.def_GS_standard_1q()
-
+        # gs, _ = self.def_gs(['H1','T1','TD1'])
+        gs, _ = self.def_gs(['H1','T1','CX2'])
+        
         # Decompose Unitary into Gate Set
-        pfi, dep, qcirc = self.dcmp_U_gs(U, gs)
-        print(pfi, dep)
-        print(qcirc)        
+        pf, cd, qc = self.dcmp_U_gs(U, gs)
+        print(pf, cd)
+        print(qc)        
             
         return
     
@@ -231,18 +204,20 @@ class NovelUniversalitySearchAgent:
     
     def compare_gs(self, ds):
 
-        # Define Gate Set 1 here
-        gs1, gs1_gates = self.def_GS_standard_1q()
+        # Define Gate Sets here (TBD: Load saved gate set from file)
 
-        # Define Gate Set 2 here
-        gs2, gs2_gates = self.def_GS_random_1q()
-        # TBD: Load saved gate set from file
+        # gs1, gs1_gates = self.def_gs(['H1','T1','TD1'])
+        # gs2, gs2_gates = self.def_gs(['R1','R1','R1'])
+
+        gs1, gs1_gates = self.def_gs(['H1','T1','CX2'])
+        gs2, gs2_gates = self.def_gs(['R1','R1','R2']) 
 
         # Decompose Unitaries from Data Set into both Gate Set
+
         samples = len(ds)
-        pf01_db, pf02_db = [], []
-        cd01_db, cd02_db = [], []
-        print("\n  Decomposing Data Set into Gate Set 1 and Gate Set 2... \n")
+        pf01_db, cd01_db = [], []
+        pf02_db, cd02_db = [], []
+        print("\n  Decomposing Data Set into Gate Set 1:["+gs1_gates+"] and Gate Set 2:["+gs2_gates+"] \n")
         for i in tqdm(range(samples)):   
             pfi, dep, _ = self.dcmp_U_gs(ds[i], gs1)
             pf01_db.append(pfi)
@@ -252,6 +227,33 @@ class NovelUniversalitySearchAgent:
             cd02_db.append(dep)
 
         return gs1, gs1_gates, pf01_db, cd01_db, gs2, gs2_gates, pf02_db, cd02_db
+
+    # ------------------------------------------------------------------------------------------------ #
+
+    def cnfg_cost_fab(self):
+
+        self.cost_agf = 0
+        # Use this method to set fabrication cost of gates in the gate set
+
+        return
+    
+    # ------------------------------------------------------------------------------------------------ #
+
+    """
+    Configure the weights of the elements of the cost function
+    """
+
+    def cnfg_wgts(self, wgts):
+
+        self.w_apf = wgts[0]   # Weight of average process fidelity
+        self.w_npf = wgts[1]   # Weight of novelty of process fidelity
+        self.w_acd = wgts[2]   # Weight of average circuit depth
+        self.w_ncd = wgts[3]   # Weight of novelty of circuit depth
+        self.w_agf = wgts[4]   # Weight of average gate fabrication
+        
+        self.cnfg_cost_fab()
+
+        return
     
     # ------------------------------------------------------------------------------------------------ #
 
@@ -259,20 +261,58 @@ class NovelUniversalitySearchAgent:
     Calculate cost function based on distribution of process fidelity differences and gate depths of two gate sets
     """
 
-    def cfn_calc(pf01_db,cd01_db,pf02_db,cd02_db):
+    def cfn_calc(self,pf01_db,cd01_db,pf02_db,cd02_db):
+
         ivt_pf_gs01 = np.subtract(1,pf01_db)
         dist_pf_novelty = np.mean(abs(np.subtract(ivt_pf_gs01,pf02_db)))
         ivt_cd_gs01 = np.subtract(max(cd01_db),cd01_db)
         dist_cd_novelty = np.mean(abs(np.subtract(ivt_cd_gs01,cd02_db)))
         dist_pf_avg = - np.mean(pf02_db)
         dist_cd_avg = np.mean(cd02_db)
-        w_pf_trend, w_cd_trend, w_pf_avg, w_cd_avg = 100, 100, 1000, 1
-        cfn = w_pf_trend*dist_pf_novelty + w_cd_trend*dist_cd_novelty + w_pf_avg*dist_pf_avg + w_cd_avg*dist_cd_avg
+
+        cfn = self.w_apf*dist_pf_avg + self.w_npf*dist_pf_novelty + self.w_acd*dist_cd_avg + self.w_ncd*dist_cd_novelty + self.w_agf*self.cost_agf
+
         return cfn
-       
+
     # ------------------------------------------------------------------------------------------------ #
     
-    def nusa():
-        return
-    
+    def nusa(self, ds, ngs_cfg, search):
+
+        # Define Gate Set 1 here (TBD: Load saved gate set from file)
+        gs1, gs1_gates = self.def_gs(['H1','T1','TD1'])
+
+        # Decompose Unitaries from Data Set into Gate Set 1
+        samples = len(ds)
+        pf01_db, cd01_db = [], []
+        print("\n  Decomposing Data Set into Gate Set 1:["+gs1_gates+"] \n")
+        for i in tqdm(range(samples)):   
+            pf, cd, _ = self.dcmp_U_gs(ds[i], gs1)
+            pf01_db.append(pf)
+            cd01_db.append(cd)
+
+        # Constraints: time, cost, trials
+        cfn_best, cfn_best_db = np.inf, []
+        max_time = 10
+        trials = 0
+        start = time.time()
+        end = time.time()
+
+        while (end - start) < max_time:
+            # Define Gate Set 2 here
+            gs2, gs2_gates = self.def_gs(ngs_cfg) 
+            trials += 1
+            print("\n  Decomposing Data Set into Gate Set 2:["+gs2_gates+"], trials = "+str(trials)+"\n") 
+            pf02_db, cd02_db = [], []
+            for i in range(samples):   
+                pf, cd, _ = self.dcmp_U_gs(ds[i], gs1)
+                pf02_db.append(pf)
+                cd02_db.append(cd)
+            cfn = self.cfn_calc(pf01_db, cd01_db, pf02_db, cd02_db)
+            if cfn <= cfn_best:
+                cfn_best = cfn
+                cfn_best_db = [gs2, gs2_gates, pf02_db, cd02_db] 
+            end = time.time()
+
+        return gs1, gs1_gates, pf01_db, cd01_db, cfn_best_db[0], cfn_best_db[1], cfn_best_db[2], cfn_best_db[3]
+
     # ------------------------------------------------------------------------------------------------ #

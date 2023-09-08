@@ -448,7 +448,7 @@ def dcmp_rand(randU, gs, trials = 100, max_depth= 100):
             qc0.append(U_gs[i], sel_shf_qb)
         choi01 = Choi(qc0)
         pfi = process_fidelity(choi0,choi01)
-        if pfi > pfi_best:
+        if pfi > pfi_best:                      # TBD: Should we consider the circuit with the highest fidelity or the one with the lowest depth?
             pfi_best = pfi
             qcirc_best = qc0
             dep_best = dep
