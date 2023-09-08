@@ -1,4 +1,4 @@
-from yaqq_ds import GenerateDataSet, VisualizeDataSet
+from yaqq_ds import GenerateDataSet, VisualizeDataSet, ResultsPlotSave
 from yaqq_nusa import NovelUniversalitySearchAgent
 
 ########################################################################################################################################################################################################
@@ -14,6 +14,7 @@ if __name__ == "__main__":
     gds = GenerateDataSet()
     vds = VisualizeDataSet()
     ns = NovelUniversalitySearchAgent()
+    rps = ResultsPlotSave()
 
     devmode = input("\n  ===> Run Default Configuration? [Y/N] (def.: Y): ") or 'Y'
 
@@ -22,15 +23,18 @@ if __name__ == "__main__":
         yaqq_cf_dcmp = [2,1,1]
         ns.cnfg_dcmp(yaqq_cf_dcmp)
 
-        ns.decompose_u()
+        # Tested: RND-1, RND-2, RND-n, SKT-1
+        # ns.decompose_u()                   
          
-        # yaqq_ds_dim = 2
-        # yaqq_ds_type = 4
-        # yaqq_ds_size = 10
-        # yaqq_ds_reso = 23
-        # yaqq_ds = gds.yaqq_gen_ds(yaqq_ds_dim, yaqq_ds_type, yaqq_ds_size, yaqq_ds_reso)
-        
-        # ns.compare_gs()
+        yaqq_ds_dim = 1
+        yaqq_ds_type = 3
+        yaqq_ds_size = 2
+        yaqq_ds_reso = 23
+        yaqq_ds = gds.yaqq_gen_ds(yaqq_ds_dim, yaqq_ds_type, yaqq_ds_size, yaqq_ds_reso)
+            
+        # Tested: RND-1, SKT-1
+        gs1, gs1_gates, pf01_db, cd01_db, gs2, gs2_gates, pf02_db, cd02_db = ns.compare_gs(yaqq_ds)
+        rps.plot_compare_gs(gs1, gs1_gates, pf01_db, cd01_db, gs2, gs2_gates, pf02_db, cd02_db, pfivt = True) 
 
         # yaqq_cf_wgts = [1,1,1,1,0]
         # ns.cnfg_wgts(yaqq_cf_wgts)
@@ -112,7 +116,7 @@ if __name__ == "__main__":
                     vds.vis_ds_Weyl(yaqq_ds)
 
         if yaqq_mode == 2:
-            ns.compare_gs()    # Costfunction selection not required for this mode
+            ns.compare_gs(yaqq_ds)    # Costfunction selection not required for this mode
             print("\n_____________________________________________________________________")
             print("\n--------------------- Thank you for using YAQQ. ---------------------")
             print("_____________________________________________________________________")
@@ -128,6 +132,7 @@ if __name__ == "__main__":
         print("   G1: Golden 1-qubit Unitary")
         print("   SG1: Super Golden 1-qubit Unitary")
         print("   T1: T Gate 1-qubit Unitary")
+        print("   TD1: T-dagger Gate 1-qubit Unitary")
         print("   H1: H (Hadamard) Gate 1-qubit Unitary")
         if yaqq_ds_dim >= 2:
             print("   R2: Haar Random 2-qubit Unitary")

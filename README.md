@@ -71,11 +71,11 @@ Thank you for using YAQQ.
 ```
 
 The plot of the data set:
-![YAQQ Plot 1](./figures/fibo20.png)
+![YAQQ Plot 1](./dev/results/figures/fibo20.png)
 
 
 The plot of the performance of the novel gate set with respect to [H, T, Tdg]. As we can see, we found a gate set (the unitary matrices of which are in the results above) that has higher fidelity and lower depth for expressing the data set.:
-![YAQQ Plot 2](./figures/fibo20_randD_20trials.png)
+![YAQQ Plot 2](./dev/results/figures/fibo20_randD_20trials.png)
 
 ### Contributing:
 Feel free to report issues during build or execution. We also welcome suggestions to improve the performance and features of this application.
@@ -89,27 +89,24 @@ Feel free to report issues during build or execution. We also welcome suggestion
 6. The YAQQ name is inspired by the [YACC](https://en.wikipedia.org/wiki/Yacc), it is a compiler-compiler, or a compiler-generator, in a similar way YAQQ provides the set of decompositions for the generated gate set.
 
 ### Development plans:
-- [x] Compare distribution of standard (h,t,tdg) and (h,t,tdg) generated via custom U
-- [x] If same, eliminate standard gate definitions, use only custom U
-- [x] Plot "fidelity score" and "resource score"
+- [ ] See if tradeoff exists between gate set size and 2 scores
+- [ ] Plot gate set as points on [Weyl chamber](https://weylchamber.readthedocs.io/en/latest/tutorial.html), e.g., HxI, IxH, TxI, IxT, CX
+- [ ] Equispaced states in higher dimension Hilbert space (under some distance measure)
+- [ ] "Research and justify" cost function to optimize for choosing complimentarity, based on distribution of 2 scores on all mesh points (e.g. KL-div, JS-div, cross entropy)
+- [ ] Solovay Kiteav decomposition of number of qubits > 1 
+- [ ] General 2 qubit gate with 15 free parameters
+- [x] Use [setuptools](https://setuptools.pypa.io/en/latest/userguide/quickstart.html), [twine](https://twine.readthedocs.io/en/stable/index.html) for PyPI
+- [x] Allow biased resource score, i.e. each gate in set can have a different cost (e.g., runtime on a QC)
+- [x] Allow tuning hyperparameters of cost function
 - [x] Find two U gates in an overspecified gate set (u1,u1dg,u2,u2dg) such that it beats (h,t,tdg) in either of the 2 scores
 - [x] Use U3 to produce points for benchmarking
-- [x] Different optimizers
-- [ ] See if tradeoff exists between gate set size and 2 scores
-- [ ] Allow biases resource score, i.e. each gate in set can have a different cost (e.g. runtime on a QC)
-- [ ] "Research and justify" cost function to optimize for choosing complimentarity, based on distribution of 2 scores on all mesh points (e.g. KL-div, JS-div, cross entropy) - current choice, Jensen-Shannon distance
-- [ ] Tuning hyperparameters of cost function
-- [ ] Equispaced states in higher dimension Hilbert space (under some distance measure)
-- [ ] Bloch sphere states using hierarchical hex mesh (e.g. [H3: Uber's Hexagonal Hierarchical Spatial Index](https://github.com/uber/h3))
-- [x] Plot fidelity/depth difference with colour on Bloch sphere like VQCP L/T topology
-- [ ] Map projections
-- [ ] Solovay Kiteav decomposition of higher number of qubits (>1)
-- [ ] General 2 qubit gate with 15 free parameters
-- [ ] PySimpleGUI
-- [ ] Write paper
-- [x] Use [setuptools](https://setuptools.pypa.io/en/latest/userguide/quickstart.html), [twine](https://twine.readthedocs.io/en/stable/index.html) for PyPI
-- [ ] Plot gate set as points on [Weyl chamber](https://weylchamber.readthedocs.io/en/latest/tutorial.html), e.g., HxI, IxH, TxI, IxT, CX
-- [ ] Given a set of noisy gates fabricated on a quantum processor, treat them as non-noisy and compile algorithms with that set. the noisy gates are first purified (i.e. should be unitary, but not the desired one, so it does not solve the problem of depolarizing)
+- [x] Try different SciPy optimizers
+- [x] Plot "fidelity score" and "resource score"
+- [x] Compare distribution of standard (h,t,tdg) and (h,t,tdg) generated via custom U; if same, eliminate standard gate definitions, use only custom U
+- [ ] PySimpleGUI (stall: current menu is extensive and self-explanatory with article)
+- [ ] Map projections for Bloch sphere (stall: focus more on n-qubit data sets)
+- [ ] Bloch sphere states using hierarchical hex mesh (e.g. [H3: Uber's Hexagonal Hierarchical Spatial Index](https://github.com/uber/h3)) (stall: focus more on n-qubit data sets)
+- [ ] Plot fidelity/depth difference with colour on Bloch sphere like VQCP L/T topology (stall: focus more on n-qubit data sets)
 
 ### Citation:
 If you find the repository useful, please consider citing:
