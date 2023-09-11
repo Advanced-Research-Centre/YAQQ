@@ -9,6 +9,7 @@ from qiskit.transpiler.passes.synthesis import SolovayKitaev
 from tqdm import tqdm
 import time
 import weylchamber
+from scipy.optimize import minimize 
 
 class NovelUniversalitySearch:
 
@@ -351,8 +352,20 @@ class NovelUniversalitySearch:
             pf01_db.append(pf)
             cd01_db.append(cd)
 
-        # Constraints: time, cost, trials
+        # Cost function for optimization
+        method = 'COBYLA'
+        maxiter = 20
+        def cost_to_optimize(gs2_params):
+            gs2, _ = self.def_gs(ngs_cfg, gs2_params) 
+            pf02_db, cd02_db = [], []
+            for i in range(samples):   
+                pf, cd, _ = self.dcmp_U_gs(ds[i], gs2)
+                pf02_db.append(pf)
+                cd02_db.append(cd)
+            cfn = self.cfn_calc(pf01_db, cd01_db, pf02_db, cd02_db)
+            return cfn
 
+        # Optimize Gate Set 2
         param_ctr = self.gs_param_ctr(ngs_cfg)
         cfn_best, cfn_best_db = np.inf, []
         max_time = 10
@@ -360,24 +373,34 @@ class NovelUniversalitySearch:
         start = time.time()
         end = time.time()
 
-        while (end - start) < max_time:
-            # Define Gate Set 2 here
-            if search == 1:
-                params = np.random.rand(param_ctr)
-            gs2, gs2_gates = self.def_gs(ngs_cfg, params) 
+        while (end - start) < max_time:     # Constraints: time/cost/trials
             trials += 1
-            print("\n  Decomposing Data Set into Gate Set 2:["+gs2_gates+"], trials = "+str(trials)+"\n") 
-            pf02_db, cd02_db = [], []
-            for i in range(samples):   
-                pf, cd, _ = self.dcmp_U_gs(ds[i], gs2)
-                pf02_db.append(pf)
-                cd02_db.append(cd)
-            cfn = self.cfn_calc(pf01_db, cd01_db, pf02_db, cd02_db)
-            if cfn <= cfn_best:
-                cfn_best = cfn
-                cfn_best_db = [gs2, gs2_gates, pf02_db, cd02_db] 
+            print("\n  Decomposing Data Set into Gate Set 2, trials = "+str(trials)+"\n") 
+            params = np.random.rand(param_ctr)
+            if search == 1:    # Random search
+                gs2, gs2_gates = self.def_gs(ngs_cfg, params) 
+                pf02_db, cd02_db = [], []
+                for i in range(samples):   
+                    pf, cd, _ = self.dcmp_U_gs(ds[i], gs2)
+                    pf02_db.append(pf)
+                    cd02_db.append(cd)
+                cfn = self.cfn_calc(pf01_db, cd01_db, pf02_db, cd02_db)
+                if cfn <= cfn_best:
+                    cfn_best = cfn
+                    cfn_best_db = [gs2, gs2_gates, pf02_db, cd02_db, params] 
+            else:               # SciPy optimize
+                res = minimize(cost_to_optimize, params, method = method, options={'maxiter': maxiter})
+                if res['fun'] <= cfn_best:
+                    cfn_best = res['fun']
+                    gs2, gs2_gates = self.def_gs(ngs_cfg, res['x'])
+                    pf02_db, cd02_db = [], []
+                    for i in range(samples):   
+                        pf, cd, _ = self.dcmp_U_gs(ds[i], gs2)
+                        pf02_db.append(pf)
+                        cd02_db.append(cd)
+                    cfn_best_db = [gs2, gs2_gates, pf02_db, cd02_db, res['x']] 
             end = time.time()
 
-        return gs1, gs1_gates, pf01_db, cd01_db, cfn_best_db[0], cfn_best_db[1], cfn_best_db[2], cfn_best_db[3]
+        return gs1, gs1_gates, pf01_db, cd01_db, cfn_best_db[0], cfn_best_db[1], cfn_best_db[2], cfn_best_db[3], cfn_best_db[4]
 
     # ------------------------------------------------------------------------------------------------ #

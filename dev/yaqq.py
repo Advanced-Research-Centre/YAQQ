@@ -43,12 +43,13 @@ if __name__ == "__main__":
         # yaqq_cf_ngs = ['R1','R1','CX2']
         # yaqq_cf_ngs = ['H1','T1','SPE2']
         yaqq_cf_ngs = ['H1','P1','CX2']
-        yaqq_ngs_search = 1
+        yaqq_ngs_search = 2
 
-        gs1, gs1_gates, pf01_db, cd01_db, gs2, gs2_gates, pf02_db, cd02_db = nsa.nusa(yaqq_ds,yaqq_cf_ngs,yaqq_ngs_search)
-        rps.plot_compare_gs(gs1, gs1_gates, pf01_db, cd01_db, gs2, gs2_gates, pf02_db, cd02_db, pfivt = True) 
+        gs1, gs1_gates, pf01_db, cd01_db, gs2, gs2_gates, pf02_db, cd02_db, opt_params = nsa.nusa(yaqq_ds,yaqq_cf_ngs,yaqq_ngs_search)
         for i in gs2:
             print(i, gs2[i])
+        print(opt_params)
+        rps.plot_compare_gs(gs1, gs1_gates, pf01_db, cd01_db, gs2, gs2_gates, pf02_db, cd02_db, pfivt = True) 
 
     elif devmode == 'N':
 
@@ -160,7 +161,8 @@ if __name__ == "__main__":
         print("   2: Parametric Search (SciPy) for non-constant gates")
         yaqq_ngs_search = int(input("\n  ===> Enter Search Method (def.: 1): ") or 1)
 
-        gs1, gs1_gates, pf01_db, cd01_db, gs2, gs2_gates, pf02_db, cd02_db = nsa.nusa(yaqq_ds,yaqq_cf_ngs,yaqq_ngs_search)
+        gs1, gs1_gates, pf01_db, cd01_db, gs2, gs2_gates, pf02_db, cd02_db, opt_params = nsa.nusa(yaqq_ds,yaqq_cf_ngs,yaqq_ngs_search)
+        print("Novel Parameters for GS2: ", opt_params)
         rps.plot_compare_gs(gs1, gs1_gates, pf01_db, cd01_db, gs2, gs2_gates, pf02_db, cd02_db, pfivt = True)  
         print("\n_____________________________________________________________________")
         print("\n--------------------- Thank you for using YAQQ. ---------------------")
