@@ -20,29 +20,35 @@ if __name__ == "__main__":
 
     if devmode == 'Y':
         
-        yaqq_cf_dcmp = [1,1,1]
+        # Tested: RND-1, RND-2, RND-n, SKT-1, QSD-n
+
+        # Most analytical = [2,2,2]
+        # Least analytical = [1,1,1]
+        yaqq_cf_dcmp = [2,2,2]
         nsa.cnfg_dcmp(yaqq_cf_dcmp)
 
-        # Tested: RND-1, RND-2, RND-n, SKT-1
         # nsa.decompose_u()                   
          
-        yaqq_ds_dim = 1
+        yaqq_ds_dim = 3
         yaqq_ds_type = 2
-        yaqq_ds_size = 3
+        yaqq_ds_size = 10
         yaqq_ds_reso = 23
         yaqq_ds = gds.yaqq_gen_ds(yaqq_ds_dim, yaqq_ds_type, yaqq_ds_size, yaqq_ds_reso)
             
-        # Tested: RND-1, RND-2, RND-n, SKT-1
         # gs1, gs1_gates, pf01_db, cd01_db, gs2, gs2_gates, pf02_db, cd02_db = nsa.compare_gs(yaqq_ds)
         # rps.plot_compare_gs(gs1, gs1_gates, pf01_db, cd01_db, gs2, gs2_gates, pf02_db, cd02_db, pfivt = True) 
 
         yaqq_cf_wgts = [100,1,50,1,0]
         nsa.cnfg_wgts(yaqq_cf_wgts)
-        yaqq_cf_ngs = ['R1','R1','R1']
+        # yaqq_cf_ngs = ['R1','R1','CX2']
+        # yaqq_cf_ngs = ['H1','T1','SPE2']
+        yaqq_cf_ngs = ['H1','P1','CX2']
         yaqq_ngs_search = 1
 
         gs1, gs1_gates, pf01_db, cd01_db, gs2, gs2_gates, pf02_db, cd02_db = nsa.nusa(yaqq_ds,yaqq_cf_ngs,yaqq_ngs_search)
         rps.plot_compare_gs(gs1, gs1_gates, pf01_db, cd01_db, gs2, gs2_gates, pf02_db, cd02_db, pfivt = True) 
+        for i in gs2:
+            print(i, gs2[i])
 
     elif devmode == 'N':
 
@@ -87,6 +93,7 @@ if __name__ == "__main__":
             print("     1. Haar Random 1-qubit pure States")
             print("     2. Haar Random 2x2 Unitaries")
             print("     3. Equispaced States on Bloch Sphere using Golden mean")
+            print("     4. Equispaced Angles on Bloch Sphere")
             yaqq_ds_type = int(input("\n  ===> Enter Data Set Type (def.: 3): ") or 3)
         elif yaqq_ds_dim == 2:
             print("\n Data Set Types for Dimension = 2:")
@@ -101,7 +108,10 @@ if __name__ == "__main__":
             print("     2. Haar Random 2^nx2^n Unitaries")
             yaqq_ds_type = int(input("\n  ===> Enter Data Set Type (def.: 2): ") or 2)
 
-        if yaqq_ds_dim == 2 and yaqq_ds_type == 4:
+        if yaqq_ds_dim == 1 and yaqq_ds_type == 4:
+            yaqq_ds_reso = int(input("\n  ===> Enter Bloch Sphere a_rz Spacing (def.: 16, 512 points): ") or 16)
+            yaqq_ds = gds.yaqq_gen_ds(yaqq_ds_dim, yaqq_ds_type, None, yaqq_ds_reso)
+        elif yaqq_ds_dim == 2 and yaqq_ds_type == 4:
             yaqq_ds_reso = int(input("\n  ===> Enter Weyl Chamber cx Spacing (def.: 23, 508 points): ") or 23)
             yaqq_ds = gds.yaqq_gen_ds(yaqq_ds_dim, yaqq_ds_type, None, yaqq_ds_reso)
         else:
@@ -129,20 +139,20 @@ if __name__ == "__main__":
         nsa.cnfg_wgts(yaqq_cf_wgts)
 
         print("\n Novel Gate Set Composition:")
-        print("   R1: Haar Random 1-qubit Unitary")                 # Search: random
-        print("   P1: Parametric 1-qubit Unitary (IBM U3)")         # Search: parametric, random
-        print("   G1: Golden 1-qubit Unitary")                      # TBD
-        print("   SG1: Super Golden 1-qubit Unitary")               # TBD
-        print("   T1: T Gate 1-qubit Unitary")                      # Constant
-        print("   TD1: T-dagger Gate 1-qubit Unitary")              # Constant
-        print("   H1: H (Hadamard) Gate 1-qubit Unitary")           # Constant
+        print("   R1: Haar Random 1-qubit Unitary")                         # Search: random
+        print("   P1: Parametric 1-qubit Unitary (IBM U3)")                 # Search: parametric, random
+        print("   G1: Golden 1-qubit Unitary")                              # TBD
+        print("   SG1: Super Golden 1-qubit Unitary")                       # TBD
+        print("   T1: T Gate 1-qubit Unitary")                              # Constant
+        print("   TD1: T-dagger Gate 1-qubit Unitary")                      # Constant
+        print("   H1: H (Hadamard) Gate 1-qubit Unitary")                   # Constant
         if yaqq_ds_dim >= 2:
-            print("   R2: Haar Random 2-qubit Unitary")
-            print("   NL2: Non-local 2-qubit Unitary")
-            print("   CX2: CNOT Gate 2-qubit Unitary")
-            print("   B2: B (Berkeley) Gate 2-qubit Unitary")
-            print("   PE2: Perfect Entangler 2-qubit Unitary")
-            print("   SPE2: Special Perfect Entangler 2-qubit Unitary")
+            print("   R2: Haar Random 2-qubit Unitary")                     # Search: random
+            print("   NL2: Non-local 2-qubit Unitary")                      # Search: parametric, random
+            print("   CX2: CNOT Gate 2-qubit Unitary")                      # Constant
+            print("   B2: B (Berkeley) Gate 2-qubit Unitary")               # Constant
+            print("   PE2: Perfect Entangler 2-qubit Unitary")              # TBD
+            print("   SPE2: Special Perfect Entangler 2-qubit Unitary")     # Search: parametric, random
         yaqq_cf_ngs = (input("\n  ===> Enter Get Set (def.: [R1,R1,R1]): ") or 'R1,R1,R1').split(',')
 
         print("\n Search Method:")

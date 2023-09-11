@@ -1,12 +1,14 @@
 import numpy as np
 from qiskit import QuantumCircuit
-from qiskit.quantum_info import random_unitary, Choi, process_fidelity
+from qiskit.quantum_info import random_unitary, Choi, process_fidelity, Operator
 from qiskit.extensions import UnitaryGate
+from qiskit.quantum_info.synthesis import qsd
 import random
 from skt import gen_basis_seq, UGate, UdgGate
 from qiskit.transpiler.passes.synthesis import SolovayKitaev
 from tqdm import tqdm
 import time
+import weylchamber
 
 class NovelUniversalitySearch:
 
@@ -26,21 +28,27 @@ class NovelUniversalitySearch:
       
     # ------------------------------------------------------------------------------------------------ #
 
-    def def_gs(self, gs_cfg):
+    def def_gs(self, gs_cfg, params = None):
 
+        # All params are normalized to [0,1]
         gs = {}
         gno = 0
+        param_ctr = 0
         for g in gs_cfg:
             gno += 1
             match g:
                 case 'R1':      # R1: Haar Random 1-qubit Unitary
                     U = random_unitary(2).data
-                case 'P1':      # P1: Parametric 1-qubit Unitary (IBM U3)
-                    U = random_unitary(2).data  # TBD
+                case 'P1':      # P1: Parametric 1-qubit Unitary (Qiskit U3)
+                    theta, phi, lam = params[param_ctr]*np.pi, params[param_ctr+1]*np.pi, params[param_ctr+2]*np.pi
+                    U = np.asarray( [[np.cos(theta/2), -np.exp(1j*lam)*np.sin(theta/2)],
+                                    [np.exp(1j*phi)*np.sin(theta/2), np.exp(1j*(lam+phi))*np.cos(theta/2)]])
+                    param_ctr += 3
                 case 'G1':      # G1: Golden 1-qubit Unitary
-                    U = random_unitary(2).data  # TBD
+                    U = random_unitary(2).data  # TBD Extension
                 case 'SG1':     # SG1: Super Golden 1-qubit Unitary
-                    U = random_unitary(2).data  # TBD
+                    # Ref: https://arxiv.org/abs/1704.02106
+                    U = random_unitary(2).data  # TBD Extension
                 case 'T1':      # T1: T Gate 1-qubit Unitary
                     U = np.array([[1, 0], [0, (1+1j)/np.sqrt(2)]], dtype=complex)
                 case 'TD1':     # TD1: T-dagger Gate 1-qubit Unitary
@@ -50,15 +58,17 @@ class NovelUniversalitySearch:
                 case 'R2':      # R2: Haar Random 2-qubit Unitary
                     U = random_unitary(4).data
                 case 'NL2':     # NL2: Non-local 2-qubit Unitary
-                    U = random_unitary(2).data  # TBD
+                    U = weylchamber.canonical_gate(params[param_ctr],params[param_ctr+1],params[param_ctr+2])
+                    param_ctr += 3
                 case 'CX2':     # CX2: CNOT Gate 2-qubit Unitary
                     U = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]], dtype=complex)
                 case 'B2':      # B2: B (Berkeley) Gate 2-qubit Unitary
-                    U = random_unitary(2).data  # TBD
+                    U = weylchamber.canonical_gate(0.5,0.25,0)
                 case 'PE2':     # PE2: Perfect Entangler 2-qubit Unitary
-                    U = random_unitary(2).data  # TBD
+                    U = random_unitary(2).data  # TBD Extension
                 case 'SPE2':    # SPE2: Special Perfect Entangler 2-qubit Unitary
-                    U = random_unitary(2).data  # TBD
+                    U = weylchamber.canonical_gate(0.5,params[param_ctr],0)
+                    param_ctr += 1
                 case _:
                     print("Invalid Gate Set Configuration")
                     exit()
@@ -66,7 +76,28 @@ class NovelUniversalitySearch:
         gs_gates = ','.join(list(gs.keys()))
 
         return gs, gs_gates
-      
+    # ------------------------------------------------------------------------------------------------ #
+
+    def gs_param_ctr(self, gs_cfg):
+
+        param_ctr = 0
+        for g in gs_cfg:
+            match g:
+                case 'P1':      # P1: Parametric 1-qubit Unitary (Qiskit U3)
+                    param_ctr += 3
+                case 'G1':      # G1: Golden 1-qubit Unitary
+                    param_ctr += 0  # TBD Extension
+                case 'SG1':     # SG1: Super Golden 1-qubit Unitary
+                    param_ctr += 0  # TBD Extension
+                case 'NL2':     # NL2: Non-local 2-qubit Unitary
+                    param_ctr += 3
+                case 'PE2':     # PE2: Perfect Entangler 2-qubit Unitary
+                    param_ctr += 0  # TBD Extension
+                case 'SPE2':    # SPE2: Special Perfect Entangler 2-qubit Unitary
+                    param_ctr += 1
+
+        return param_ctr
+    
     # ------------------------------------------------------------------------------------------------ #
 
     """
@@ -85,12 +116,13 @@ class NovelUniversalitySearch:
             seq = random.choices(list(gs.keys()), k=dep)
             qc0 = QuantumCircuit(dim)
             for seqid in seq:
-                g_order = list(range(dim))
-                random.shuffle(g_order)
-                qc0.append(gs[seqid], g_order[:gs[seqid].num_qubits])
+                if gs[seqid].num_qubits <= dim:
+                    g_order = list(range(dim))
+                    random.shuffle(g_order)
+                    qc0.append(gs[seqid], g_order[:gs[seqid].num_qubits])
             choi01 = Choi(qc0)
             pfi = process_fidelity(choi0,choi01)
-            if pfi > pfi_best:
+            if pfi > pfi_best:   # TBD: Should we consider the circuit with the highest fidelity or the one with the lowest depth?
                 pfi_best = pfi
                 qcirc_best = qc0
                 dep_best = dep
@@ -107,7 +139,8 @@ class NovelUniversalitySearch:
 
         gs_skt = []
         for g in gs.keys():
-            gs_skt.append(UGate(g,gs[g].to_matrix()))
+            if gs[g].num_qubits == 1:
+                gs_skt.append(UGate(g,gs[g].to_matrix()))
 
         return gs_skt
     
@@ -140,46 +173,70 @@ class NovelUniversalitySearch:
     def dcmp_U_gs(self, U, gs):
         
         dim = int(np.log2(Choi(U).dim[0]))
-        rand_trials = 5
+        rand_trials = 100
         rand_max_depth = 500
 
         if dim > 2 and self.d_nq == 1:      # Random n-qubit decomposition
-            # Decompose using gates in gs1, no further decompositions required (this is the least analytical decomposition)
-            pfi, dep, qcirc = self.dcmp_rand(U, gs, trials = rand_trials, max_depth = rand_max_depth)
+            # Decompose using gates in gs1, no further decompositions required
+            pf, cd, qc = self.dcmp_rand(U, gs, trials = rand_trials, max_depth = rand_max_depth)
         elif dim > 2 and self.d_nq == 2:    # QSD decomposition
-            # Analytically decompose using CX, Ry, Rz. Need to further decompose both 2-qubit and 1-qubit gates
-            if self.d_2q == 1:                  # Random 2-qubit decomposition
-                pass  # TBD
-            elif self.d_2q == 2:                # Cartan decomposition
-                # Analytically decompose using CAN 2-qubit gates in gs1, need to further decompose 1-qubit gates
-                if self.d_1q == 1:                  # Random 1-qubit decomposition
-                    pass  # TBD
-                elif self.d_1q == 2:                # Solovay-Kitaev decomposition (this is the most analytical decomposition)
-                    pass  # TBD
-            if self.d_1q == 1:                  # Random 1-qubit decomposition
-                pass  # TBD
-            elif self.d_1q == 2:                # Solovay-Kitaev decomposition
-                # convert gs to SKT UGate
-                pass  # TBD
+            # Need to further decompose both 2-qubit and 1-qubit gates
+            qsd_circ = qsd.qs_decomposition(U.to_matrix())
+            ds_qsd_1q, ds_qsd_2q = [], []
+            for g in qsd_circ:
+                if g.operation.num_qubits == 1:
+                    ds_qsd_1q.append(UnitaryGate(Operator(g.operation),label='QSD_1q'))
+                elif g.operation.num_qubits == 2:
+                    ds_qsd_2q.append(UnitaryGate(Operator(g.operation),label='QSD_2q'))
+            # Decompose 2 qubits gates in ds_qsd_2q           
+            ds_qsd_2q_gs = []
+            for U_qsd_2q in ds_qsd_2q:
+                _, _, qcirc_QSD_2q = self.dcmp_U_gs(U_qsd_2q, gs)
+                ds_qsd_2q_gs.append(qcirc_QSD_2q)
+            # Decompose 1 qubit gates in ds_qsd_1q
+            ds_qsd_1q_gs = []
+            for U_qsd_1q in ds_qsd_1q:
+                _, _, qcirc_QSD_1q = self.dcmp_U_gs(U_qsd_1q, gs)
+                ds_qsd_1q_gs.append(qcirc_QSD_1q)
+            # Replace the gates in QSD with decomposed circuits
+            qc = QuantumCircuit(dim)
+            for g in qsd_circ:
+                if g.operation.num_qubits == 1:
+                    U_gs = ds_qsd_1q_gs.pop(0)
+                    tgt = [qsd_circ.find_bit(x).index for x in g.qubits]
+                    for g_gs in U_gs:
+                        qc.append(g_gs.operation, tgt)
+                elif g.operation.num_qubits == 2:
+                    U_gs = ds_qsd_2q_gs.pop(0)
+                    tgt = [qsd_circ.find_bit(x).index for x in g.qubits]
+                    for g_gs in U_gs:
+                        if len(g_gs.qubits) == 1:
+                            qc.append(g_gs.operation, [tgt[g_gs.qubits[0].index]])
+                        elif len(g_gs.qubits) == 2:
+                            qc.append(g_gs.operation, tgt)
+                qc.barrier()
+            pf = process_fidelity(Choi(U),Choi(qc))
+            cd = qc.depth()
 
         if dim == 2 and self.d_2q == 1:     # Random 2-qubit decomposition
             # Decompose using gates in gs1, no further decompositions required
-            pfi, dep, qcirc = self.dcmp_rand(U, gs, trials = rand_trials, max_depth = rand_max_depth)
+            pf, cd, qc = self.dcmp_rand(U, gs, trials = rand_trials, max_depth = rand_max_depth)
         elif dim == 2 and self.d_2q == 2:   # Cartan decomposition
             # Analytically decompose using CAN 2-qubit gates in gs1, need to further decompose 1-qubit gates
-            if self.d_1q == 1:                  # Random 1-qubit decomposition
-                pass  # TBD
-            elif self.d_1q == 2:                # Solovay-Kitaev decomposition
-                pass  # TBD
+            qc = QuantumCircuit(dim)
+            qc.append(U,list(range(dim)))  
+            pf = 1
+            cd = 1
+            # TBD: Cartan decomposition
 
         if dim == 1 and self.d_1q == 1:     # Random 1-qubit decomposition
-            pfi, dep, qcirc = self.dcmp_rand(U, gs, trials = rand_trials, max_depth = rand_max_depth)
+            pf, cd, qc = self.dcmp_rand(U, gs, trials = rand_trials, max_depth = rand_max_depth)
         elif dim == 1 and self.d_1q == 2:   # Solovay-Kitaev decomposition
             gbs = gen_basis_seq()
             skt_obj = SolovayKitaev(recursion_degree = 3, basic_approximations = gbs.generate_basic_approximations(self.skt_gs(gs)))  # declare SKT object, larger recursion depth increases the accuracy and length of the decomposition
-            pfi, dep, qcirc = self.dcmp_skt(U, skt_obj)
+            pf, cd, qc = self.dcmp_skt(U, skt_obj)
 
-        return pfi, dep, qcirc
+        return pf, cd, qc
 
     # ------------------------------------------------------------------------------------------------ #
 
@@ -191,12 +248,13 @@ class NovelUniversalitySearch:
         
         # Define Gate Set to decompose into here
         # gs, _ = self.def_gs(['H1','T1','TD1'])
-        gs, _ = self.def_gs(['H1','T1','CX2'])
+        gs, _ = self.def_gs(['H1','T1','TD1','CX2'])
+        # gs, _ = self.def_gs(['H1','T1','CX2'])
         
         # Decompose Unitary into Gate Set
         pf, cd, qc = self.dcmp_U_gs(U, gs)
-        print(pf, cd)
         print(qc)        
+        print(pf, cd)
             
         return
     
@@ -209,8 +267,11 @@ class NovelUniversalitySearch:
         # gs1, gs1_gates = self.def_gs(['H1','T1','TD1'])
         # gs2, gs2_gates = self.def_gs(['R1','R1','R1'])
 
+        # gs1, gs1_gates = self.def_gs(['H1','T1','CX2'])
+        # gs2, gs2_gates = self.def_gs(['R1','R1','R2']) 
+
         gs1, gs1_gates = self.def_gs(['H1','T1','CX2'])
-        gs2, gs2_gates = self.def_gs(['R1','R1','R2']) 
+        gs2, gs2_gates = self.def_gs(['R1','R1','CX2']) 
 
         # Decompose Unitaries from Data Set into both Gate Set
 
@@ -279,7 +340,7 @@ class NovelUniversalitySearch:
     def nusa(self, ds, ngs_cfg, search):
 
         # Define Gate Set 1 here (TBD: Load saved gate set from file)
-        gs1, gs1_gates = self.def_gs(['H1','T1','TD1'])
+        gs1, gs1_gates = self.def_gs(['H1','T1','CX2'])
 
         # Decompose Unitaries from Data Set into Gate Set 1
         samples = len(ds)
@@ -291,6 +352,8 @@ class NovelUniversalitySearch:
             cd01_db.append(cd)
 
         # Constraints: time, cost, trials
+
+        param_ctr = self.gs_param_ctr(ngs_cfg)
         cfn_best, cfn_best_db = np.inf, []
         max_time = 10
         trials = 0
@@ -299,12 +362,14 @@ class NovelUniversalitySearch:
 
         while (end - start) < max_time:
             # Define Gate Set 2 here
-            gs2, gs2_gates = self.def_gs(ngs_cfg) 
+            if search == 1:
+                params = np.random.rand(param_ctr)
+            gs2, gs2_gates = self.def_gs(ngs_cfg, params) 
             trials += 1
             print("\n  Decomposing Data Set into Gate Set 2:["+gs2_gates+"], trials = "+str(trials)+"\n") 
             pf02_db, cd02_db = [], []
             for i in range(samples):   
-                pf, cd, _ = self.dcmp_U_gs(ds[i], gs1)
+                pf, cd, _ = self.dcmp_U_gs(ds[i], gs2)
                 pf02_db.append(pf)
                 cd02_db.append(cd)
             cfn = self.cfn_calc(pf01_db, cd01_db, pf02_db, cd02_db)

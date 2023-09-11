@@ -17,7 +17,11 @@ class GenerateDataSet:
 
     def yaqq_gen_ds(self, ds_dim, ds_type, ds_size, ds_reso):
 
-        if ds_dim == 2 and ds_type == 4:
+        if ds_dim == 1 and ds_type == 4:
+            ds = self.gen_ds_equiA(ds_reso)
+            ds_size = len(ds)
+            print("\n  ===> YAQQ Data Set Generated for Dimension =", ds_dim, "Type =", ds_type, "Spacing =", ds_reso, "Size =", ds_size)
+        elif ds_dim == 2 and ds_type == 4:
             ds = self.gen_ds_equiNL(ds_reso)
             ds_size = len(ds)
             print("\n  ===> YAQQ Data Set Generated for Dimension =", ds_dim, "Type =", ds_type, "Spacing =", ds_reso, "Size =", ds_size)
@@ -94,8 +98,33 @@ class GenerateDataSet:
             qc = QuantumCircuit(1)       
             qc.ry(z_ang,0)  # To rotate state z_ang from |0>, rotate about Y
             qc.rz(x_ang,0)  # To rotate state x_ang from |+>, rotate about Z
-            fiboU_0 = Operator.from_circuit(qc)      
-            ds.append(UnitaryGate(fiboU_0,label='FiboU'+str(i)))
+            fiboU = Operator.from_circuit(qc)      
+            ds.append(UnitaryGate(fiboU,label='FiboU'+str(i)))
+
+        return ds
+    
+    # ------------------------------------------------------------------------------------------------ #
+
+    """
+    Data Set Generation: Equispaced angles on Bloch Sphere
+    parameters a_rz and a_rx are re-interpreted in spherical coordinates as respectively the colatitude with respect to the z-axis and the longitude with respect to the x-axis
+    """
+
+    def gen_ds_equiA(self, px = 20):
+
+        ds = []
+        a_rz = np.linspace(0, math.pi, px, endpoint=False)
+        a_rx = np.linspace(0, 2*math.pi, 2*px, endpoint=False)
+        ang_ds = product(a_rz, a_rx)
+        points = 0
+        for ang in ang_ds:
+            # Enumerate points in the Bloch sphere
+            qc = QuantumCircuit(1)       
+            qc.ry(ang[0],0)  # To rotate state z_ang from |0>, rotate about Y
+            qc.rz(ang[1],0)  # To rotate state x_ang from |+>, rotate about Z
+            points+= 1
+            equiU = Operator.from_circuit(qc)      
+            ds.append(UnitaryGate(equiU,label='EquiU'+str(points)))
 
         return ds
     
