@@ -1,6 +1,8 @@
 # Yet Another Quantum Quantizer
 
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
+[![PyPI version](https://badge.fury.io/py/yaqq.svg)](https://badge.fury.io/py/yaqq)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5738685.svg)](https://doi.org/10.5281/zenodo.5738685)
 
 The YAQQ (Yaqq Another Quantum Quantizer) is an agent that searches for novel quantum gate sets. Given a gate set, it can find a complementary gate that is performs better in certain transformation than the original gate set. It is possible theoretically because, (a) there are an infinite number of way of creating universal quantum computing gate sets, (b) for each discrete gate sets, there are certain quantum states which are easy to express, but many other quantum states which are exponentially costly. The cost, or the performance of a gate set, takes into account the fidelity when the gate set is used to decompose the target set of quantum transformations, and the circuit complexity of the decomposition.
 
