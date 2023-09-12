@@ -22,7 +22,7 @@ if __name__ == "__main__":
         
         # Tested: RND-1, RND-2, RND-n, SKT-1, QSD-n
 
-        # Most analytical = [2,2,2]
+        # Most analytical = [2,2,2]     # '1q':'rand','skt' | '2q':'rand','kak' | '3+q':'rand','qsd'
         # Least analytical = [1,1,1]
         yaqq_cf_dcmp = [2,2,2]
         nsa.cnfg_dcmp(yaqq_cf_dcmp)

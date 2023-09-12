@@ -341,7 +341,7 @@ class NovelUniversalitySearch:
     def nusa(self, ds, ngs_cfg, search):
 
         # Define Gate Set 1 here (TBD: Load saved gate set from file)
-        gs1, gs1_gates = self.def_gs(['H1','T1','CX2'])
+        gs1, gs1_gates = self.def_gs(['H1','T1','CX2'])     # TBD: Take from user input
 
         # Decompose Unitaries from Data Set into Gate Set 1
         samples = len(ds)
@@ -368,7 +368,7 @@ class NovelUniversalitySearch:
         # Optimize Gate Set 2
         param_ctr = self.gs_param_ctr(ngs_cfg)
         cfn_best, cfn_best_db = np.inf, []
-        max_time = 10
+        max_time = 10       # in seconds
         trials = 0
         start = time.time()
         end = time.time()

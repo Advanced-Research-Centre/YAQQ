@@ -580,14 +580,48 @@ def TEST_dcmp_rand():
 
 # ------------------------------------------------------------------------------------------------ #
 
+from qiskit.quantum_info import TwoQubitBasisDecomposer
+from qiskit.quantum_info.synthesis.two_qubit_decompose import TwoQubitWeylDecomposition
+
+def TEST_KAK():
+
+    # The basis gate is supercontrolled for an exact decomposition (i.e., has Weyl coordinates (π/4,β,0))
+    bg = UnitaryGate(weylchamber.canonical_gate(0.5,0.25,0), label='B')  # Berkeley gate
+    dcmp_B_KAK = TwoQubitBasisDecomposer(bg)
+
+    # Define a random unitary to decompose
+    U = Operator(random_unitary(4).data)
+    qc = QuantumCircuit(2)
+    qc.append(U, [0,1])
+    qc_gate = qc.to_gate() 
+    U_tgt = TwoQubitWeylDecomposition(Operator(qc_gate).data)  
+
+    # print(B_KAK.num_basis_gates(U))
+    U3r, U3l, U2r, U2l, U1r, U1l, U0r, U0l = dcmp_B_KAK.decomp3_supercontrolled(U_tgt)
+
+    u0 = np.kron(U0l,U0r)
+    u1 = np.kron(U1l,U1r)
+    u2 = np.kron(U2l,U2r)
+    u3 = np.kron(U3l,U3r)
+    UD = Operator(u0 @ bg.to_matrix() @ u1 @ bg.to_matrix() @ u2 @ bg.to_matrix() @ u3)
+
+    Uc = Choi(U)  
+    UDc = Choi(UD)
+    print(process_fidelity(Uc,UDc))
+
+    return
+
 ########################################################################################################################################################################################################
 
 if __name__ == "__main__":
     
     # prconda activate C:\Users\aritr\anaconda3\envs\yaqq
     
-    TEST_dcmp_rand()
+    TEST_KAK()
     exit()
+
+    # TEST_dcmp_rand()
+    # exit()
 
 
     samples, dim = 10,2
