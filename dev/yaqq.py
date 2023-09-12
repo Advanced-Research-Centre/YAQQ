@@ -20,10 +20,13 @@ if __name__ == "__main__":
 
     if devmode == 'Y':
         
-        # Tested: RND-1, RND-2, RND-n, SKT-1, QSD-n
-
-        # Most analytical = [2,2,2]     # '1q':'rand','skt' | '2q':'rand','kak' | '3+q':'rand','qsd'
-        # Least analytical = [1,1,1]
+        # [ 1q:'rand','skt' | 2q:'rand','kak' | 3+q:'rand','qsd' ]
+        # All possible options for testing: 
+        #   3+q: [x,x,1], [1,1,2], [1,2,2], [2,1,2], [2,2,2]
+        #    2q: [x,1,-], [1,2,-], [2,2,-]
+        #    1q: [1,-,-], [2,-,-]
+        # Most analytical, best fidelity, slow = [2,2,2] : 'skt','kak','qsd'   
+        # Least analytical, bad fidelity, fast = [1,1,1] : 'rand','rand','rand'
         yaqq_cf_dcmp = [2,2,2]
         nsa.cnfg_dcmp(yaqq_cf_dcmp)
 
@@ -31,7 +34,7 @@ if __name__ == "__main__":
          
         yaqq_ds_dim = 3
         yaqq_ds_type = 2
-        yaqq_ds_size = 10
+        yaqq_ds_size = 5
         yaqq_ds_reso = 23
         yaqq_ds = gds.yaqq_gen_ds(yaqq_ds_dim, yaqq_ds_type, yaqq_ds_size, yaqq_ds_reso)
             
@@ -147,6 +150,7 @@ if __name__ == "__main__":
         print("   T1: T Gate 1-qubit Unitary")                              # Constant
         print("   TD1: T-dagger Gate 1-qubit Unitary")                      # Constant
         print("   H1: H (Hadamard) Gate 1-qubit Unitary")                   # Constant
+        print("   F1: Load 1-qubit Unitary Gate definition from File")      # Constant TBD Extension
         if yaqq_ds_dim >= 2:
             print("   R2: Haar Random 2-qubit Unitary")                     # Search: random
             print("   NL2: Non-local 2-qubit Unitary")                      # Search: parametric, random
@@ -154,6 +158,7 @@ if __name__ == "__main__":
             print("   B2: B (Berkeley) Gate 2-qubit Unitary")               # Constant
             print("   PE2: Perfect Entangler 2-qubit Unitary")              # TBD
             print("   SPE2: Special Perfect Entangler 2-qubit Unitary")     # Search: parametric, random
+            print("   F2: Load 2-qubit Unitary Gate definition from File")  # Constant TBD Extension
         yaqq_cf_ngs = (input("\n  ===> Enter Get Set (def.: [R1,R1,R1]): ") or 'R1,R1,R1').split(',')
 
         print("\n Search Method:")

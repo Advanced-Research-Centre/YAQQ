@@ -2,7 +2,10 @@ COPYING
 README.md
 setup.py
 src/__init__.py
+src/skt.py
 src/yaqq.py
+src/yaqq_ds.py
+src/yaqq_nus.py
 src/yaqq.egg-info/PKG-INFO
 src/yaqq.egg-info/SOURCES.txt
 src/yaqq.egg-info/dependency_links.txt

@@ -582,21 +582,28 @@ def TEST_dcmp_rand():
 
 from qiskit.quantum_info import TwoQubitBasisDecomposer
 from qiskit.quantum_info.synthesis.two_qubit_decompose import TwoQubitWeylDecomposition
+import warnings
 
 def TEST_KAK():
 
     # The basis gate is supercontrolled for an exact decomposition (i.e., has Weyl coordinates (π/4,β,0))
-    bg = UnitaryGate(weylchamber.canonical_gate(0.5,0.25,0), label='B')  # Berkeley gate
+    # bg = UnitaryGate(weylchamber.canonical_gate(0.5,0.25,0.0), label='B')  # Berkeley gate
+    U = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]], dtype=complex)
+    bg = UnitaryGate(U, label='CX') 
+    warnings.filterwarnings("ignore", category=UserWarning) # Ignore warning of non-perfect decomposition for non-supercontrolled gates
     dcmp_B_KAK = TwoQubitBasisDecomposer(bg)
 
     # Define a random unitary to decompose
-    U = Operator(random_unitary(4).data)
-    qc = QuantumCircuit(2)
-    qc.append(U, [0,1])
-    qc_gate = qc.to_gate() 
-    U_tgt = TwoQubitWeylDecomposition(Operator(qc_gate).data)  
+    dim = 2
+    qc_gate = UnitaryGate(random_unitary(2**dim),label='RndU')
+    # U = Operator(random_unitary(4).data)
+    # qc = QuantumCircuit(2)
+    # qc.append(U, [0,1])
+    # qc_gate = qc.to_gate() 
+    # U_tgt = TwoQubitWeylDecomposition(Operator(qc_gate).data)  
+    U_tgt = TwoQubitWeylDecomposition(qc_gate)
 
-    # print(B_KAK.num_basis_gates(U))
+    # print(dcmp_B_KAK.num_basis_gates(U))
     U3r, U3l, U2r, U2l, U1r, U1l, U0r, U0l = dcmp_B_KAK.decomp3_supercontrolled(U_tgt)
 
     u0 = np.kron(U0l,U0r)
@@ -605,7 +612,8 @@ def TEST_KAK():
     u3 = np.kron(U3l,U3r)
     UD = Operator(u0 @ bg.to_matrix() @ u1 @ bg.to_matrix() @ u2 @ bg.to_matrix() @ u3)
 
-    Uc = Choi(U)  
+    # Uc = Choi(U)  
+    Uc = Choi(qc_gate)  
     UDc = Choi(UD)
     print(process_fidelity(Uc,UDc))
 
