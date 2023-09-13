@@ -11,6 +11,7 @@ in yaqq/setup.py, change version number
 from yaqq folder, run: 
     python -m build
     twine upload dist/*
+use token and key
 """
 
 # Step 3: install YAQQ package from pypi

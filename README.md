@@ -95,7 +95,7 @@ Feel free to report issues during build or execution. We also welcome suggestion
 3. [Automated Quantum Software Engineering: why? what? how?](https://arxiv.org/abs/2212.00619)
 4. [Discovering Quantum Circuit Components with Program Synthesis](https://arxiv.org/abs/2305.01707)
 5. [Automated Gadget Discovery in Science](https://arxiv.org/abs/2212.12743)
-6. The YAQQ name is inspired by the [YACC](https://en.wikipedia.org/wiki/Yacc), it is a compiler-compiler, or a compiler-generator, in a similar way YAQQ provides the set of decompositions for the generated gate set.
+6. The YAQQ name is inspired by the [YACC](https://en.wikipedia.org/wiki/Yacc) - a compiler-compiler, or a compiler-generator. In a similar way YAQQ provides the set of decompositions for the generated gate set.
 
 ### Development plans:
 - [ ] See if tradeoff exists between gate set size and 2 scores
