@@ -4,14 +4,21 @@
 [![PyPI version](https://badge.fury.io/py/yaqq.svg)](https://badge.fury.io/py/yaqq)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5738685.svg)](https://doi.org/10.5281/zenodo.5738685)
 
-The YAQQ (Yaqq Another Quantum Quantizer) is an agent that searches for novel quantum gate sets. Given a gate set, it can find a complementary gate that is performs better in certain transformation than the original gate set. It is possible theoretically because, (a) there are an infinite number of way of creating universal quantum computing gate sets, (b) for each discrete gate sets, there are certain quantum states which are easy to express, but many other quantum states which are exponentially costly. The cost, or the performance of a gate set, takes into account the fidelity when the gate set is used to decompose the target set of quantum transformations, and the circuit complexity of the decomposition.
+The YAQQ (Yaqq Another Quantum Quantizer) is an agent that searches for novel quantum gate sets. Given a gate set, it can find a complementary gate that performs better for a particular set of unitary transformations than the original gate set. It is possible theoretically because (a) there are an infinite number of ways of creating universal quantum computing gate sets - the ubiquity of quantum universality, (b) for each discrete gate set, there are certain quantum states that are easy to express, but many other quantum states which are exponentially costly - universal distribution for quantum automata. The cost, or the performance of a gate set, considers the fidelity when the gate set is used to decompose the target set of quantum transformations and the circuit complexity of the decomposition.
 
 ### How to use:
-1. Install dependencies (python 3.11.4, numpy 1.23.5, qiskit 0.43.3, astropy 5.3.1, matplotlib 3.7.2, scipy 1.11.1, tqdm 4.65.0, qutip 4.7.2, scikit-learn 1.3.0)
-2. Navigate to codes folder
+
+#### Developer version:
+1. Install dependencies ("numpy >= 1.23.5", "qiskit >= 0.43.3", "astropy >= 5.3.1", "matplotlib >= 3.7.2", "scipy >= 1.11.1", "tqdm >= 4.65.0", "qutip >= 4.7.2", "scikit-learn >= 1.3.0", "weylchamber >= 0.4.0")
+2. Navigate to `dev` folder
 3. `>> python yaqq.py`
 
-### Usage modes:
+#### YAQQ package:
+1. `pip install --upgrade yaqq`
+2. In a Python program, `import yaqq`
+3. `yaqq.run()`
+
+### Usage modes (to be updated):
 
 The first user menu choice is to either enter the `manual mode` or the `developer mode`. The developer mode is for testing certain features during development, and is a hardcoded shortcut for a specific selection of the manual mode. We recommend going into the former to access the full functionality of YAQQ.
 
@@ -27,7 +34,7 @@ The YAQQ operates in 2 modes: (a) it can `compare` two gate sets hardcoded based
 
 If the generate mode is selected, the user has a further choice of the method used to search the space of gate sets. We currently support 2 methods: (a) `random` search, where new Haar random unitaries are used as gate set and their expressive power is evaluated, (b) an `optimization` routine finds the configuration for single qubit generalized rotation gates to form the gate set. 
 
-### Example run:
+### Example run (to be updated):
 
 ```
 (env) [path]>python yaqq.py
