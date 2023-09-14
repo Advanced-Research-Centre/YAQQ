@@ -416,7 +416,7 @@ class NovelUniversalitySearch:
 
         # Cost function for optimization
         method = 'COBYLA'
-        maxiter = 20
+        maxiter = 100
         def cost_to_optimize(gs2_params):
             gs2, _ = self.def_gs(ngs_cfg, gs2_params) 
             pf02_db, cd02_db = [], []
@@ -430,7 +430,7 @@ class NovelUniversalitySearch:
         # Optimize Gate Set 2
         param_ctr = self.gs_param_ctr(ngs_cfg)
         cfn_best, cfn_best_db = np.inf, []
-        max_time = 10       # in seconds
+        max_time = 100       # in seconds
         trials = 0
         start = time.time()
         end = time.time()

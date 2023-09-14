@@ -304,6 +304,10 @@ class ResultsPlotSave:
             plt.savefig('results/figures/'+exp_id+'.pdf')
             plt.savefig('results/figures/'+exp_id+'.png')      
             np.save('results/data/'+exp_id+'gs1', gs1)
+            np.save('results/data/'+exp_id+'pf1', pf1)
+            np.save('results/data/'+exp_id+'cd1', cd1)
             np.save('results/data/'+exp_id+'gs2', gs2)
+            np.save('results/data/'+exp_id+'pf2', pf2)
+            np.save('results/data/'+exp_id+'cd2', cd2)
 
         plt.show()
