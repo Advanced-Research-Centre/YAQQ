@@ -416,7 +416,7 @@ class NovelUniversalitySearch:
 
         # Cost function for optimization
         method = 'COBYLA'
-        maxiter = 100
+        maxiter = 500
         def cost_to_optimize(gs2_params):
             gs2, _ = self.def_gs(ngs_cfg, gs2_params) 
             pf02_db, cd02_db = [], []
