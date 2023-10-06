@@ -27,32 +27,33 @@ if __name__ == "__main__":
         #    1q: [1,-,-], [2,-,-]
         # Most analytical, best fidelity, slow = [2,2,2] : 'skt','kak','qsd'   
         # Least analytical, bad fidelity, fast = [1,1,1] : 'rand','rand','rand'
-        yaqq_cf_dcmp = [2,2,2]
-        nsa.cnfg_dcmp(yaqq_cf_dcmp)
+        yaqq_cf_dcmp_gs1 = [2,2,2]
+        yaqq_cf_dcmp_gs2 = [2,2,2]
+        nsa.cnfg_dcmp(yaqq_cf_dcmp_gs1,yaqq_cf_dcmp_gs2)
 
-        # nsa.decompose_u()                   
+        nsa.decompose_u()                   
          
-        yaqq_ds_dim = 3
-        yaqq_ds_type = 2
-        yaqq_ds_size = 5
-        yaqq_ds_reso = 23
-        yaqq_ds = gds.yaqq_gen_ds(yaqq_ds_dim, yaqq_ds_type, yaqq_ds_size, yaqq_ds_reso)
+        # yaqq_ds_dim = 3
+        # yaqq_ds_type = 2
+        # yaqq_ds_size = 5
+        # yaqq_ds_reso = 23
+        # yaqq_ds = gds.yaqq_gen_ds(yaqq_ds_dim, yaqq_ds_type, yaqq_ds_size, yaqq_ds_reso)
             
-        # gs1, gs1_gates, pf01_db, cd01_db, gs2, gs2_gates, pf02_db, cd02_db = nsa.compare_gs(yaqq_ds)
+        # # gs1, gs1_gates, pf01_db, cd01_db, gs2, gs2_gates, pf02_db, cd02_db = nsa.compare_gs(yaqq_ds)
+        # # rps.plot_compare_gs(gs1, gs1_gates, pf01_db, cd01_db, gs2, gs2_gates, pf02_db, cd02_db, pfivt = True) 
+
+        # yaqq_cf_wgts = [100,1,50,1,0]
+        # nsa.cnfg_wgts(yaqq_cf_wgts)
+        # # yaqq_cf_ngs = ['R1','R1','CX2']
+        # # yaqq_cf_ngs = ['H1','T1','SPE2']
+        # yaqq_cf_ngs = ['H1','P1','CX2']
+        # yaqq_ngs_search = 2
+
+        # gs1, gs1_gates, pf01_db, cd01_db, gs2, gs2_gates, pf02_db, cd02_db, opt_params = nsa.nusa(yaqq_ds,yaqq_cf_ngs,yaqq_ngs_search)
+        # for i in gs2:
+        #     print(i, gs2[i])
+        # print(opt_params)
         # rps.plot_compare_gs(gs1, gs1_gates, pf01_db, cd01_db, gs2, gs2_gates, pf02_db, cd02_db, pfivt = True) 
-
-        yaqq_cf_wgts = [100,1,50,1,0]
-        nsa.cnfg_wgts(yaqq_cf_wgts)
-        # yaqq_cf_ngs = ['R1','R1','CX2']
-        # yaqq_cf_ngs = ['H1','T1','SPE2']
-        yaqq_cf_ngs = ['H1','P1','CX2']
-        yaqq_ngs_search = 2
-
-        gs1, gs1_gates, pf01_db, cd01_db, gs2, gs2_gates, pf02_db, cd02_db, opt_params = nsa.nusa(yaqq_ds,yaqq_cf_ngs,yaqq_ngs_search)
-        for i in gs2:
-            print(i, gs2[i])
-        print(opt_params)
-        rps.plot_compare_gs(gs1, gs1_gates, pf01_db, cd01_db, gs2, gs2_gates, pf02_db, cd02_db, pfivt = True) 
 
     elif devmode == 'N':
 
@@ -69,20 +70,27 @@ if __name__ == "__main__":
         print("   3. Decompose a n-qubit U (in code) w.r.t. GS1 (in code)")
         yaqq_mode = int(input("\n  ===> Enter YAQQ Mode (def.: 1): ") or 1)
 
-        yaqq_cf_dcmp = []
+        yaqq_cf_dcmp_gs1 = []
+        yaqq_cf_dcmp_gs2 = []
         print("\n Gate Decomposition Method for Dimension = 1:")
         print("     1. Random Decomposition (trails auto-scale w.r.t. dimension)")
         print("     2. Solovay-Kitaev Decomposition")
-        yaqq_cf_dcmp.append(int(input("\n  ===> Enter Gate Decomposition Method for Dimension = 2 (def.: 2): ") or 2))
+        yaqq_cf_dcmp_gs1.append(int(input("\n  ===> Enter Gate Set 1 Decomposition Method for Dimension = 1 (def.: 1): ") or 1))
+        if yaqq_mode != 3:
+            yaqq_cf_dcmp_gs2.append(int(input("\n  ===> Enter Gate Set 2 Decomposition Method for Dimension = 1 (def.: 1): ") or 1))
         print("\n Gate Decomposition Method for Dimension = 2:")
         print("     1. Random Decomposition (trails auto-scale w.r.t. dimension)")
         print("     2. Cartan Decomposition")
-        yaqq_cf_dcmp.append(int(input("\n  ===> Enter Gate Decomposition Method for Dimension = 2 (def.: 2): ") or 2))
+        yaqq_cf_dcmp_gs1.append(int(input("\n  ===> Enter Gate Set 1 Decomposition Method for Dimension = 2 (def.: 2): ") or 2))
+        if yaqq_mode != 3:
+            yaqq_cf_dcmp_gs2.append(int(input("\n  ===> Enter Gate Set 2 Decomposition Method for Dimension = 2 (def.: 2): ") or 2))
         print("\n Gate Decomposition Method for Dimension = 3+:")
         print("     1. Random Decomposition (trails auto-scale w.r.t. dimension)")
         print("     2. Quantum Shannon Decomposition")
-        yaqq_cf_dcmp.append(int(input("\n  ===> Enter Gate Decomposition Method for Dimension = 3+ (def.: 2): ") or 2))
-        nsa.cnfg_dcmp(yaqq_cf_dcmp)
+        yaqq_cf_dcmp_gs1.append(int(input("\n  ===> Enter Gate Set 1 Decomposition Method for Dimension = 3+ (def.: 2): ") or 2))
+        if yaqq_mode != 3:
+            yaqq_cf_dcmp_gs2.append(int(input("\n  ===> Enter Gate Set 2 Decomposition Method for Dimension = 3+ (def.: 2): ") or 2))
+        nsa.cnfg_dcmp(yaqq_cf_dcmp_gs1,yaqq_cf_dcmp_gs2)
 
         if yaqq_mode == 3:
             nsa.decompose_u()    # Dataset and costfunction selection not required for this mode

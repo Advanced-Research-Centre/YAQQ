@@ -22,11 +22,16 @@ class NovelUniversalitySearch:
     Configure the decomposition methods for 1, 2 and 3+ qubit gates
     """
 
-    def cnfg_dcmp(self, dcmp):
+    def cnfg_dcmp(self, dcmp_gs1, dcmp_gs2):
+       
+        self.d_1q = [dcmp_gs1[0]]             # Decomposition method for 1-qubit gates             [rand, skd]
+        self.d_2q = [dcmp_gs1[1]]             # Decomposition method for 2-qubit gates             [rand, cartan]
+        self.d_nq = [dcmp_gs1[2]]             # Decomposition method for 3 or more qubit gates     [rand, qsd]
 
-        self.d_1q = dcmp[0]    # Decomposition method for 1-qubit gates             [rand, skd]
-        self.d_2q = dcmp[1]    # Decomposition method for 2-qubit gates             [rand, cartan]
-        self.d_nq = dcmp[2]    # Decomposition method for 3 or more qubit gates     [rand, qsd]
+        if len(dcmp_gs2) > 0:
+            self.d_1q.append(dcmp_gs2[0])   # Decomposition method for 1-qubit gates             [rand, skd]
+            self.d_2q.append(dcmp_gs2[1])   # Decomposition method for 2-qubit gates             [rand, cartan]
+            self.d_nq.append(dcmp_gs2[2])   # Decomposition method for 3 or more qubit gates     [rand, qsd]           
 
         return
       
@@ -206,16 +211,16 @@ class NovelUniversalitySearch:
     Given an unitary and a gate set, decompose the unitary into the gate set based on the decomposition methods
     """
 
-    def dcmp_U_gs(self, U, gs):
+    def dcmp_U_gs(self, U, gs, gsid = 0):
         
         dim = int(np.log2(Choi(U).dim[0]))
         rand_trials = 100
         rand_max_depth = 500
 
-        if dim > 2 and self.d_nq == 1:      # Random n-qubit decomposition
+        if dim > 2 and self.d_nq[gsid] == 1:      # Random n-qubit decomposition
             # Decompose using gates in gs1, no further decompositions required
             pf, cd, qc = self.dcmp_rand(U, gs, trials = rand_trials, max_depth = rand_max_depth)
-        elif dim > 2 and self.d_nq == 2:    # QSD decomposition
+        elif dim > 2 and self.d_nq[gsid] == 2:    # QSD decomposition
             # Need to further decompose both 2-qubit and 1-qubit gates
             qsd_circ = qsd.qs_decomposition(U.to_matrix())
             ds_qsd_1q, ds_qsd_2q = [], []
@@ -227,12 +232,12 @@ class NovelUniversalitySearch:
             # Decompose 2 qubits gates in ds_qsd_2q           
             ds_qsd_2q_gs = []
             for U_qsd_2q in ds_qsd_2q:
-                _, _, qcirc_QSD_2q = self.dcmp_U_gs(U_qsd_2q, gs)
+                _, _, qcirc_QSD_2q = self.dcmp_U_gs(U_qsd_2q, gs, gsid)
                 ds_qsd_2q_gs.append(qcirc_QSD_2q)
             # Decompose 1 qubit gates in ds_qsd_1q
             ds_qsd_1q_gs = []
             for U_qsd_1q in ds_qsd_1q:
-                _, _, qcirc_QSD_1q = self.dcmp_U_gs(U_qsd_1q, gs)
+                _, _, qcirc_QSD_1q = self.dcmp_U_gs(U_qsd_1q, gs, gsid)
                 ds_qsd_1q_gs.append(qcirc_QSD_1q)
             # Replace the gates in QSD with decomposed circuits
             qc = QuantumCircuit(dim)
@@ -254,10 +259,10 @@ class NovelUniversalitySearch:
             pf = process_fidelity(Choi(U),Choi(qc))
             cd = qc.depth()
 
-        if dim == 2 and self.d_2q == 1:     # Random 2-qubit decomposition
+        if dim == 2 and self.d_2q[gsid] == 1:     # Random 2-qubit decomposition
             # Decompose using gates in gs1, no further decompositions required
             pf, cd, qc = self.dcmp_rand(U, gs, trials = rand_trials, max_depth = rand_max_depth)
-        elif dim == 2 and self.d_2q == 2:   # Cartan decomposition
+        elif dim == 2 and self.d_2q[gsid] == 2:   # Cartan decomposition
             # Analytically decompose using CAN 2-qubit gates in gs1, need to further decompose 1-qubit gates
             bg = self.kak_gs(gs)
             # warnings.filterwarnings("ignore", category=UserWarning) # Ignore warning of non-perfect decomposition for non-supercontrolled gates
@@ -266,7 +271,7 @@ class NovelUniversalitySearch:
             # Decompose 1 qubit gates in ds_kak_1q
             ds_kak_1q_gs = []
             for U_kak_1q in ds_kak_1q:
-                _, _, qcirc_KAK_1q = self.dcmp_U_gs(UnitaryGate(Operator(U_kak_1q),label='KAK_1q'), gs)
+                _, _, qcirc_KAK_1q = self.dcmp_U_gs(UnitaryGate(Operator(U_kak_1q),label='KAK_1q'), gs, gsid)
                 ds_kak_1q_gs.append(qcirc_KAK_1q)
             # Replace the gates in KAK with decomposed circuits
             qc = QuantumCircuit(2)
@@ -292,9 +297,9 @@ class NovelUniversalitySearch:
             pf = process_fidelity(Choi(U),Choi(qc))
             cd = qc.depth()
 
-        if dim == 1 and self.d_1q == 1:     # Random 1-qubit decomposition
+        if dim == 1 and self.d_1q[gsid] == 1:     # Random 1-qubit decomposition
             pf, cd, qc = self.dcmp_rand(U, gs, trials = rand_trials, max_depth = rand_max_depth)
-        elif dim == 1 and self.d_1q == 2:   # Solovay-Kitaev decomposition
+        elif dim == 1 and self.d_1q[gsid] == 2:   # Solovay-Kitaev decomposition
             gbs = gen_basis_seq()
             skt_obj = SolovayKitaev(recursion_degree = 3, basic_approximations = gbs.generate_basic_approximations(self.skt_gs(gs)))  # declare SKT object, larger recursion depth increases the accuracy and length of the decomposition
             pf, cd, qc = self.dcmp_skt(U, skt_obj)
@@ -315,7 +320,7 @@ class NovelUniversalitySearch:
         # gs, _ = self.def_gs(['H1','T1','CX2'])
         
         # Decompose Unitary into Gate Set
-        pf, cd, qc = self.dcmp_U_gs(U, gs)
+        pf, cd, qc = self.dcmp_U_gs(U, gs, gsid = 0)
         # print(qc)        
         print(pf, cd)
             
@@ -333,8 +338,11 @@ class NovelUniversalitySearch:
         # gs1, gs1_gates = self.def_gs(['H1','T1','CX2'])
         # gs2, gs2_gates = self.def_gs(['R1','R1','R2']) 
 
-        gs1, gs1_gates = self.def_gs(['H1','T1','CX2'])         # TBD: Take from user input
-        gs2, gs2_gates = self.def_gs(['R1','R1','CX2'])         # TBD: Take from user input
+        # gs1, gs1_gates = self.def_gs(['H1','T1','CX2'])         # TBD: Take from user input
+        # gs2, gs2_gates = self.def_gs(['R1','R1','CX2'])         # TBD: Take from user input
+
+        gs1, gs1_gates = self.def_gs(['H1','T1'])   # TBD: Take from user input
+        gs2, gs2_gates = self.def_gs(['H1','T1'])   # TBD: Take from user input
 
         # Decompose Unitaries from Data Set into both Gate Set
 
@@ -343,10 +351,10 @@ class NovelUniversalitySearch:
         pf02_db, cd02_db = [], []
         print("\n  Decomposing Data Set into Gate Set 1:["+gs1_gates+"] and Gate Set 2:["+gs2_gates+"] \n")
         for i in tqdm(range(samples)):   
-            pfi, dep, _ = self.dcmp_U_gs(ds[i], gs1)
+            pfi, dep, _ = self.dcmp_U_gs(ds[i], gs1, gsid = 0)
             pf01_db.append(pfi)
             cd01_db.append(dep)
-            pfi, dep, _ = self.dcmp_U_gs(ds[i], gs2)
+            pfi, dep, _ = self.dcmp_U_gs(ds[i], gs2, gsid = 1)
             pf02_db.append(pfi)
             cd02_db.append(dep)
 
@@ -410,7 +418,7 @@ class NovelUniversalitySearch:
         pf01_db, cd01_db = [], []
         print("\n  Decomposing Data Set into Gate Set 1:["+gs1_gates+"] \n")
         for i in tqdm(range(samples)):   
-            pf, cd, _ = self.dcmp_U_gs(ds[i], gs1)
+            pf, cd, _ = self.dcmp_U_gs(ds[i], gs1, gsid = 0)
             pf01_db.append(pf)
             cd01_db.append(cd)
 
@@ -421,7 +429,7 @@ class NovelUniversalitySearch:
             gs2, _ = self.def_gs(ngs_cfg, gs2_params) 
             pf02_db, cd02_db = [], []
             for i in range(samples):   
-                pf, cd, _ = self.dcmp_U_gs(ds[i], gs2)
+                pf, cd, _ = self.dcmp_U_gs(ds[i], gs2, gsid = 1)
                 pf02_db.append(pf)
                 cd02_db.append(cd)
             cfn = self.cfn_calc(pf01_db, cd01_db, pf02_db, cd02_db)
@@ -443,7 +451,7 @@ class NovelUniversalitySearch:
                 gs2, gs2_gates = self.def_gs(ngs_cfg, params) 
                 pf02_db, cd02_db = [], []
                 for i in range(samples):   
-                    pf, cd, _ = self.dcmp_U_gs(ds[i], gs2)
+                    pf, cd, _ = self.dcmp_U_gs(ds[i], gs2, gsid = 1)
                     pf02_db.append(pf)
                     cd02_db.append(cd)
                 cfn = self.cfn_calc(pf01_db, cd01_db, pf02_db, cd02_db)
@@ -457,7 +465,7 @@ class NovelUniversalitySearch:
                     gs2, gs2_gates = self.def_gs(ngs_cfg, res['x'])
                     pf02_db, cd02_db = [], []
                     for i in range(samples):   
-                        pf, cd, _ = self.dcmp_U_gs(ds[i], gs2)
+                        pf, cd, _ = self.dcmp_U_gs(ds[i], gs2, gsid = 1)
                         pf02_db.append(pf)
                         cd02_db.append(cd)
                     cfn_best_db = [gs2, gs2_gates, pf02_db, cd02_db, res['x']] 
