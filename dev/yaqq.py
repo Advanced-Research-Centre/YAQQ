@@ -27,9 +27,11 @@ if __name__ == "__main__":
         #    1q: [1,-,-], [2,-,-]
         # Most analytical, best fidelity, slow = [2,2,2] : 'skt','kak','qsd'   
         # Least analytical, bad fidelity, fast = [1,1,1] : 'rand','rand','rand'
-        yaqq_cf_dcmp_gs1 = [2,2,2]
+        yaqq_cf_dcmp_gs1 = [1,2,2]
         yaqq_cf_dcmp_gs2 = [2,2,2]
         nsa.cnfg_dcmp(yaqq_cf_dcmp_gs1,yaqq_cf_dcmp_gs2)
+
+
 
         nsa.decompose_u()                   
          

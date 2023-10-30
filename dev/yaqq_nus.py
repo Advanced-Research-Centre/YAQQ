@@ -13,6 +13,7 @@ from scipy.optimize import minimize
 from qiskit.quantum_info import TwoQubitBasisDecomposer
 from qiskit.quantum_info.synthesis.two_qubit_decompose import TwoQubitWeylDecomposition
 import warnings
+from datetime import date
 
 class NovelUniversalitySearch:
 
@@ -60,6 +61,14 @@ class NovelUniversalitySearch:
                     U = random_unitary(2).data  # TBD Extension
                 case 'T1':      # T1: T Gate 1-qubit Unitary
                     U = np.array([[1, 0], [0, (1+1j)/np.sqrt(2)]], dtype=complex)
+                case 'X1':      # X1: X Gate 1-qubit Unitary
+                    U = np.array([[0, 1], [1, 0]], dtype=complex)
+                case 'Z1':      # Z1: Z Gate 1-qubit Unitary
+                    U = np.array([[1, 0], [0, -1]], dtype=complex)  
+                case 'S1':      # S1: S Gate 1-qubit Unitary
+                    U = np.array([[1, 0], [0, np.exp(1j*np.pi/2)]], dtype=complex)
+                case 'M1':      # M1: Matt's pi/3 phase Gate 1-qubit Unitary for HQECC
+                    U = np.array([[1, 0], [0, np.exp(1j*np.pi/3)]], dtype=complex)
                 case 'TD1':     # TD1: T-dagger Gate 1-qubit Unitary
                     U = np.array([[1, 0], [0, (1-1j)/np.sqrt(2)]], dtype=complex)
                 case 'H1':      # H1: H (Hadamard) Gate 1-qubit Unitary
@@ -311,19 +320,30 @@ class NovelUniversalitySearch:
     def decompose_u(self):
 
         # Define Unitary to decompose here
-        dim = 3
+        dim = 1
         U = UnitaryGate(random_unitary(2**dim),label='RndU')    # TBD: Take from user input
         
         # Define Gate Set to decompose into here
-        # gs, _ = self.def_gs(['H1','T1','TD1'])
-        gs, _ = self.def_gs(['H1','T1','TD1','CX2'])            # TBD: Take from user input
+        # gs, _ = self.def_gs(['H1','T1'])
+        # gs, _ = self.def_gs(['X1','Z1','S1','M1'])              # Matt's HQECC experiment
+        gs, gs_gates = self.def_gs(['H1','T1','TD1'])
+        # gs, _ = self.def_gs(['H1','T1','TD1','CX2'])            # TBD: Take from user input
         # gs, _ = self.def_gs(['H1','T1','CX2'])
-        
+
         # Decompose Unitary into Gate Set
         pf, cd, qc = self.dcmp_U_gs(U, gs, gsid = 0)
-        # print(qc)        
         print(pf, cd)
-            
+
+        show_qc = input("\n  ===> Show Decomposed Quantum Circuit? [Y/N] (def.: N): ") or 'N'
+        if show_qc == 'Y':
+            print(qc)     
+
+        save_qc = input("\n  ===> Save Decomposed Quantum Circuit? [Y/N] (def.: N): ") or 'N'
+        if save_qc == 'Y':
+            qc_fname = input("Enter filename: ") or 'qc_'+str(date.today())+'_'+U.label+'_'+gs_gates.replace(',','-')
+            with open(qc_fname+'.txt', 'w') as f:
+                for i in qc:
+                    f.write(i.operation.label+' '+str(i.qubits[0].index)+'\n')
         return
     
     # ------------------------------------------------------------------------------------------------ #
