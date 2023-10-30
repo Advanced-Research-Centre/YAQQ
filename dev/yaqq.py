@@ -169,7 +169,7 @@ if __name__ == "__main__":
             print("   PE2: Perfect Entangler 2-qubit Unitary")              # TBD
             print("   SPE2: Special Perfect Entangler 2-qubit Unitary")     # Search: parametric, random
             print("   F2: Load 2-qubit Unitary Gate definition from File")  # Constant TBD Extension
-        yaqq_cf_ngs = (input("\n  ===> Enter Get Set (def.: [R1,R1,R1]): ") or 'R1,R1,R1').split(',')
+        yaqq_cf_ngs = (input("\n  ===> Enter Gate Set (def.: [R1,R1,R1]): ") or 'R1,R1,R1').split(',')
 
         print("\n Search Method:")
         print("   1: Random Search for non-constant gates")

@@ -320,15 +320,43 @@ class NovelUniversalitySearch:
     def decompose_u(self):
 
         # Define Unitary to decompose here
-        dim = 1
-        U = UnitaryGate(random_unitary(2**dim),label='RndU')    # TBD: Take from user input
+        yaqq_ds_dim = int(input("\n  ===> Enter Data Set Dimension (def.: 1): ") or 1)        
         
+        load_U = input("\n  ===> Load Unitary to Decompose from File? [Y/N] (def.: N): ") or 'N'
+        if load_U == 'Y':
+            U_fname = input("Enter filename (def.: <enter>): ") or 'dcmp_U'
+            np_U = np.load('results/data/'+U_fname+'.npy', allow_pickle=True)
+            print(np_U)
+            if np_U.shape[0] != 2**yaqq_ds_dim:
+                print("Invalid Unitary Dimension")
+                exit()
+            
+            U = UnitaryGate(np_U,label='UsrU')
+        else:
+            print("Generating Haar random unitary of given dimension") 
+            np_U = np.array(random_unitary(2**yaqq_ds_dim))
+            save_U = input("\n  ===> Save Generated Unitary? [Y/N] (def.: N): ") or 'N'
+            if save_U == 'Y':
+                U_fname = input("Enter filename (def.: <enter>): ") or 'dcmp_U'
+                np.save('results/data/'+U_fname+'.npy',np_U)
+            U = UnitaryGate(np_U,label='RndU')
+       
         # Define Gate Set to decompose into here
-        # gs, _ = self.def_gs(['H1','T1'])
-        # gs, _ = self.def_gs(['X1','Z1','S1','M1'])              # Matt's HQECC experiment
-        gs, gs_gates = self.def_gs(['H1','T1','TD1'])
-        # gs, _ = self.def_gs(['H1','T1','TD1','CX2'])            # TBD: Take from user input
-        # gs, _ = self.def_gs(['H1','T1','CX2'])
+        print("\n Gate Set Composition:")                   # TBD: Currently only constant gates allowed
+        print("   X1: X (Pauli-X) Gate 1-qubit Unitary")  
+        print("   Y1: Y (Pauli-Y) Gate 1-qubit Unitary")  
+        print("   Z1: Z (Pauli-Z) Gate 1-qubit Unitary")  
+        print("   T1: T Gate 1-qubit Unitary")            
+        print("   TD1: T-dagger Gate 1-qubit Unitary")    
+        print("   H1: H (Hadamard) Gate 1-qubit Unitary") 
+        print("   S1: S Gate 1-qubit Unitary") 
+        print("   M1: Phase pi/3 Gate 1-qubit Unitary")     # for Matt's HQECC experiment
+        if yaqq_ds_dim >= 2:
+            print("   CX2: CNOT Gate 2-qubit Unitary")             
+            print("   B2: B (Berkeley) Gate 2-qubit Unitary")      
+        yaqq_cf_ngs = (input("\n  ===> Enter Gate Set (def.: [H1,T1,TD1]): ") or 'H1,T1,TD1').split(',')
+
+        gs, gs_gates = self.def_gs(yaqq_cf_ngs)
 
         # Decompose Unitary into Gate Set
         pf, cd, qc = self.dcmp_U_gs(U, gs, gsid = 0)
@@ -338,12 +366,13 @@ class NovelUniversalitySearch:
         if show_qc == 'Y':
             print(qc)     
 
-        save_qc = input("\n  ===> Save Decomposed Quantum Circuit? [Y/N] (def.: N): ") or 'N'
+        save_qc = input("\n  ===> Save Decomposed Quantum Circuit? [Y/N] (def.: Y): ") or 'Y'
         if save_qc == 'Y':
-            qc_fname = input("Enter filename: ") or 'qc_'+str(date.today())+'_'+U.label+'_'+gs_gates.replace(',','-')
-            with open(qc_fname+'.txt', 'w') as f:
+            qc_fname = input("Enter filename (def.: <enter>): ") or 'qc_'+str(date.today())+'_'+U.label+'_'+gs_gates.replace(',','-')
+            with open('results/data/'+qc_fname+'.txt', 'w') as f:
                 for i in qc:
                     f.write(i.operation.label+' '+str(i.qubits[0].index)+'\n')
+
         return
     
     # ------------------------------------------------------------------------------------------------ #
