@@ -409,24 +409,25 @@ class NovelUniversalitySearch:
     
     # ------------------------------------------------------------------------------------------------ #
     
-    def compare_gs(self, ds):
+    def compare_gs(self, ds, autocfg, Config = None):
 
-        # Define Gate Sets here (TBD: Load saved gate set from file)
-
-        # gs1, gs1_gates = self.def_gs(['H1','T1','TD1'])
-        # gs2, gs2_gates = self.def_gs(['R1','R1','R1'])
-
-        # gs1, gs1_gates = self.def_gs(['H1','T1','CX2'])
-        # gs2, gs2_gates = self.def_gs(['R1','R1','R2']) 
-
-        # gs1, gs1_gates = self.def_gs(['H1','T1','CX2'])         # TBD: Take from user input
-        # gs2, gs2_gates = self.def_gs(['R1','R1','CX2'])         # TBD: Take from user input
-
-        gs1, gs1_gates = self.def_gs(['H1','T1'])   # TBD: Take from user input
-        gs2, gs2_gates = self.def_gs(['H1','T1'])   # TBD: Take from user input
+        # Define Gate Sets here
+        if autocfg:
+            yaqq_cf_gs1 = Config['mode2']['yaqq_cf_gs1'].split(',')
+            yaqq_cf_gs2 = Config['mode2']['yaqq_cf_gs2'].split(',')
+            gs1, gs1_gates = self.def_gs(yaqq_cf_gs1)
+            gs2, gs2_gates = self.def_gs(yaqq_cf_gs2)
+        else:
+            gs1, gs1_gates = self.def_gs(['H1','T1']) 
+            gs2, gs2_gates = self.def_gs(['H1','T1'])
+            # gs1, gs1_gates = self.def_gs(['H1','T1','TD1'])
+            # gs2, gs2_gates = self.def_gs(['R1','R1','R1'])
+            # gs1, gs1_gates = self.def_gs(['H1','T1','CX2'])
+            # gs2, gs2_gates = self.def_gs(['R1','R1','R2']) 
+            # gs1, gs1_gates = self.def_gs(['H1','T1','CX2'])         # TBD: Take from user input
+            # gs2, gs2_gates = self.def_gs(['R1','R1','CX2'])         # TBD: Take from user input
 
         # Decompose Unitaries from Data Set into both Gate Set
-
         samples = len(ds)
         pf01_db, cd01_db = [], []
         pf02_db, cd02_db = [], []
@@ -489,10 +490,16 @@ class NovelUniversalitySearch:
 
     # ------------------------------------------------------------------------------------------------ #
     
-    def nusa(self, ds, ngs_cfg, search):
+    def nusa(self, ds, ngs_cfg, optimize, autocfg, Config = None):
 
-        # Define Gate Set 1 here (TBD: Load saved gate set from file)
-        gs1, gs1_gates = self.def_gs(['H1','T1','CX2'])         # TBD: Take from user input
+        # Define Gate Set 1 here
+        
+        yaqq_cf_ngs = Config['mode1']['yaqq_cf_ngs'].split(',')
+        if autocfg:
+            yaqq_cf_gs1 = Config['mode1']['yaqq_cf_gs1'].split(',')
+            gs1, gs1_gates = self.def_gs(yaqq_cf_gs1)
+        else:
+            gs1, gs1_gates = self.def_gs(['H1','T1','CX2'])
 
         # Decompose Unitaries from Data Set into Gate Set 1
         samples = len(ds)
@@ -530,18 +537,7 @@ class NovelUniversalitySearch:
             trials += 1
             print("\n  Decomposing Data Set into Gate Set 2, trials = "+str(trials)+"\n") 
             params = np.random.rand(param_ctr)
-            if search == 1:    # Random search
-                gs2, gs2_gates = self.def_gs(ngs_cfg, params) 
-                pf02_db, cd02_db = [], []
-                for i in range(samples):   
-                    pf, cd, _ = self.dcmp_U_gs(ds[i], gs2, gsid = 1)
-                    pf02_db.append(pf)
-                    cd02_db.append(cd)
-                cfn = self.cfn_calc(pf01_db, cd01_db, pf02_db, cd02_db)
-                if cfn <= cfn_best:
-                    cfn_best = cfn
-                    cfn_best_db = [gs2, gs2_gates, pf02_db, cd02_db, params] 
-            else:               # SciPy optimize
+            if optimize == 'Y':     # SciPy optimize
                 res = minimize(cost_to_optimize, params, method = method, options={'maxiter': maxiter})
                 if res['fun'] <= cfn_best:
                     cfn_best = res['fun']
@@ -552,6 +548,17 @@ class NovelUniversalitySearch:
                         pf02_db.append(pf)
                         cd02_db.append(cd)
                     cfn_best_db = [gs2, gs2_gates, pf02_db, cd02_db, res['x']] 
+            else:                   # Random search
+                gs2, gs2_gates = self.def_gs(ngs_cfg, params) 
+                pf02_db, cd02_db = [], []
+                for i in range(samples):   
+                    pf, cd, _ = self.dcmp_U_gs(ds[i], gs2, gsid = 1)
+                    pf02_db.append(pf)
+                    cd02_db.append(cd)
+                cfn = self.cfn_calc(pf01_db, cd01_db, pf02_db, cd02_db)
+                if cfn <= cfn_best:
+                    cfn_best = cfn
+                    cfn_best_db = [gs2, gs2_gates, pf02_db, cd02_db, params] 
             end = time.time()
 
         np.save(f"results/data/db_gs2_H1T1NL2_iter{maxiter}_time{max_time}",db_gs2_NL2)

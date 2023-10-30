@@ -24,28 +24,10 @@ if __name__ == "__main__":
         autocfg = True
 
         Config = configparser.ConfigParser()
-        cfg_fname = input("\n  ===> Enter Configuration Filename (def.: QART_eid-0001): ") or 'QART_eid-0001'
+        cfg_fname = input("\n  ===> Enter Configuration Filename (def.: QART_eid-0001): ") or 'HQEC_eid-0001'
         Config.read("configs/"+cfg_fname+".cfg")
         
         yaqq_mode = int(Config['experiment']['yaqq_mode'])
-        yaqq_cf_dcmp_gs1 = json.loads(Config['experiment']['yaqq_cf_dcmp_gs1'])
-        yaqq_cf_dcmp_gs2 = json.loads(Config['experiment']['yaqq_cf_dcmp_gs2'])
-        nsa.cnfg_dcmp(yaqq_cf_dcmp_gs1,yaqq_cf_dcmp_gs2)
-
-        if yaqq_mode == 3:
-            nsa.decompose_u(autocfg, Config)    # Dataset and costfunction selection not required for this mode
-            print("\n_____________________________________________________________________")
-            print("\n--------------------- Thank you for using YAQQ. ---------------------")
-            print("_____________________________________________________________________")
-            exit()       
-
-                   
-
-        # for Project HQECC
-
-
-
-        # for Project NUSA
 
         # [ 1q:'rand','skt' | 2q:'rand','kak' | 3+q:'rand','qsd' ]
         # All possible options for testing: 
@@ -53,29 +35,50 @@ if __name__ == "__main__":
         #    2q: [x,1,-], [1,2,-], [2,2,-]
         #    1q: [1,-,-], [2,-,-]
         # Most analytical, best fidelity, slow = [2,2,2] : 'skt','kak','qsd'   
-        # Least analytical, bad fidelity, fast = [1,1,1] : 'rand','rand','rand'               
-         
-        # yaqq_ds_dim = 3
-        # yaqq_ds_type = 2
-        # yaqq_ds_size = 5
-        # yaqq_ds_reso = 23
-        # yaqq_ds = gds.yaqq_gen_ds(yaqq_ds_dim, yaqq_ds_type, yaqq_ds_size, yaqq_ds_reso)
+        # Least analytical, bad fidelity, fast = [1,1,1] : 'rand','rand','rand' 
+        yaqq_cf_dcmp_gs1 = json.loads(Config['experiment']['yaqq_cf_dcmp_gs1'])
+        yaqq_cf_dcmp_gs2 = json.loads(Config['experiment']['yaqq_cf_dcmp_gs2'])
+        nsa.cnfg_dcmp(yaqq_cf_dcmp_gs1,yaqq_cf_dcmp_gs2)
+
+        if yaqq_mode == 1 or yaqq_mode == 2:
+            yaqq_ds_dim = int(Config['mode2']['yaqq_ds_dim'])
+            yaqq_ds_type = int(Config['mode2']['yaqq_ds_type'])                  
+            if yaqq_ds_dim == 1 and yaqq_ds_type == 4:
+                yaqq_ds_reso = int(Config['mode2']['yaqq_ds_reso'])
+                yaqq_ds = gds.yaqq_gen_ds(yaqq_ds_dim, yaqq_ds_type, None, yaqq_ds_reso)
+            elif yaqq_ds_dim == 2 and yaqq_ds_type == 4:
+                yaqq_ds_reso = int(Config['mode2']['yaqq_ds_reso'])
+                yaqq_ds = gds.yaqq_gen_ds(yaqq_ds_dim, yaqq_ds_type, None, yaqq_ds_reso)
+            else:
+                yaqq_ds_size = int(Config['mode2']['yaqq_ds_size'])
+                yaqq_ds = gds.yaqq_gen_ds(yaqq_ds_dim, yaqq_ds_type, yaqq_ds_size, None)
+            yaqq_ds_show = Config['mode2']['yaqq_ds_show']
+            if yaqq_ds_show == 'Y':
+                if yaqq_ds_dim == 1:
+                    vds.vis_ds_Bloch(yaqq_ds)
+                else:
+                    vds.vis_ds_Weyl(yaqq_ds)
+
+            if yaqq_mode == 1:
+                yaqq_cf_wgts = json.loads(Config['experiment']['yaqq_cf_wgts'])
+                nsa.cnfg_wgts(yaqq_cf_wgts)
+                yaqq_cf_ngs = Config['mode1']['yaqq_cf_ngs'].split(',')
+                yaqq_ngs_search = Config['mode2']['optimize']
+                gs1, gs1_gates, pf01_db, cd01_db, gs2, gs2_gates, pf02_db, cd02_db, opt_params = nsa.nusa(yaqq_ds,yaqq_cf_ngs,yaqq_ngs_search, autocfg, Config)
+                for i in gs2:
+                    print(i, gs2[i])
+                print(opt_params)
+            else:       
+                gs1, gs1_gates, pf01_db, cd01_db, gs2, gs2_gates, pf02_db, cd02_db = nsa.compare_gs(yaqq_ds, autocfg, Config)   
             
-        # # gs1, gs1_gates, pf01_db, cd01_db, gs2, gs2_gates, pf02_db, cd02_db = nsa.compare_gs(yaqq_ds)
-        # # rps.plot_compare_gs(gs1, gs1_gates, pf01_db, cd01_db, gs2, gs2_gates, pf02_db, cd02_db, pfivt = True) 
+            rps.plot_compare_gs(gs1, gs1_gates, pf01_db, cd01_db, gs2, gs2_gates, pf02_db, cd02_db, pfivt = True) 
 
-        # yaqq_cf_wgts = [100,1,50,1,0]
-        # nsa.cnfg_wgts(yaqq_cf_wgts)
-        # # yaqq_cf_ngs = ['R1','R1','CX2']
-        # # yaqq_cf_ngs = ['H1','T1','SPE2']
-        # yaqq_cf_ngs = ['H1','P1','CX2']
-        # yaqq_ngs_search = 2
+        else:
+            nsa.decompose_u(autocfg, Config)
 
-        # gs1, gs1_gates, pf01_db, cd01_db, gs2, gs2_gates, pf02_db, cd02_db, opt_params = nsa.nusa(yaqq_ds,yaqq_cf_ngs,yaqq_ngs_search)
-        # for i in gs2:
-        #     print(i, gs2[i])
-        # print(opt_params)
-        # rps.plot_compare_gs(gs1, gs1_gates, pf01_db, cd01_db, gs2, gs2_gates, pf02_db, cd02_db, pfivt = True) 
+        print("\n_____________________________________________________________________")
+        print("\n--------------------- Thank you for using YAQQ. ---------------------")
+        print("_____________________________________________________________________")
 
     elif devmode == 'N':
         autocfg = False
@@ -162,7 +165,7 @@ if __name__ == "__main__":
                     vds.vis_ds_Weyl(yaqq_ds)
 
         if yaqq_mode == 2:
-            gs1, gs1_gates, pf01_db, cd01_db, gs2, gs2_gates, pf02_db, cd02_db = nsa.compare_gs(yaqq_ds)     # Costfunction selection not required for this mode
+            gs1, gs1_gates, pf01_db, cd01_db, gs2, gs2_gates, pf02_db, cd02_db = nsa.compare_gs(yaqq_ds, autocfg)     # Costfunction selection not required for this mode
             rps.plot_compare_gs(gs1, gs1_gates, pf01_db, cd01_db, gs2, gs2_gates, pf02_db, cd02_db, pfivt = True) 
             print("\n_____________________________________________________________________")
             print("\n--------------------- Thank you for using YAQQ. ---------------------")
@@ -195,9 +198,9 @@ if __name__ == "__main__":
         print("\n Search Method:")
         print("   1: Random Search for non-constant gates")
         print("   2: Parametric Search (SciPy) for non-constant gates")
-        yaqq_ngs_search = int(input("\n  ===> Enter Search Method (def.: 1): ") or 1)
+        yaqq_ngs_search = input("\n  ===> Search Method as Optimize? (def.: Y): ") or 'Y'
 
-        gs1, gs1_gates, pf01_db, cd01_db, gs2, gs2_gates, pf02_db, cd02_db, opt_params = nsa.nusa(yaqq_ds,yaqq_cf_ngs,yaqq_ngs_search)
+        gs1, gs1_gates, pf01_db, cd01_db, gs2, gs2_gates, pf02_db, cd02_db, opt_params = nsa.nusa(yaqq_ds,yaqq_cf_ngs,yaqq_ngs_search, autocfg)
         print("Novel Parameters for GS2: ", opt_params)
         rps.plot_compare_gs(gs1, gs1_gates, pf01_db, cd01_db, gs2, gs2_gates, pf02_db, cd02_db, pfivt = True)  
         print("\n_____________________________________________________________________")
