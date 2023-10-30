@@ -1,5 +1,7 @@
 from yaqq_ds import GenerateDataSet, VisualizeDataSet, ResultsPlotSave
 from yaqq_nus import NovelUniversalitySearch
+import configparser   # other choices: json, yaml, csv, xml
+import json
 
 ########################################################################################################################################################################################################
 
@@ -19,21 +21,39 @@ if __name__ == "__main__":
     devmode = input("\n  ===> Run Default Configuration? [Y/N] (def.: Y): ") or 'Y'
 
     if devmode == 'Y':
+        autocfg = True
+
+        Config = configparser.ConfigParser()
+        cfg_fname = input("\n  ===> Enter Configuration Filename (def.: QART_eid-0001): ") or 'QART_eid-0001'
+        Config.read("configs/"+cfg_fname+".cfg")
         
+        yaqq_mode = int(Config['experiment']['yaqq_mode'])
+        yaqq_cf_dcmp_gs1 = json.loads(Config['experiment']['yaqq_cf_dcmp_gs1'])
+        yaqq_cf_dcmp_gs2 = json.loads(Config['experiment']['yaqq_cf_dcmp_gs2'])
+        nsa.cnfg_dcmp(yaqq_cf_dcmp_gs1,yaqq_cf_dcmp_gs2)
+
+        if yaqq_mode == 3:
+            nsa.decompose_u(autocfg, Config)    # Dataset and costfunction selection not required for this mode
+            print("\n_____________________________________________________________________")
+            print("\n--------------------- Thank you for using YAQQ. ---------------------")
+            print("_____________________________________________________________________")
+            exit()       
+
+                   
+
+        # for Project HQECC
+
+
+
+        # for Project NUSA
+
         # [ 1q:'rand','skt' | 2q:'rand','kak' | 3+q:'rand','qsd' ]
         # All possible options for testing: 
         #   3+q: [x,x,1], [1,1,2], [1,2,2], [2,1,2], [2,2,2]
         #    2q: [x,1,-], [1,2,-], [2,2,-]
         #    1q: [1,-,-], [2,-,-]
         # Most analytical, best fidelity, slow = [2,2,2] : 'skt','kak','qsd'   
-        # Least analytical, bad fidelity, fast = [1,1,1] : 'rand','rand','rand'
-        yaqq_cf_dcmp_gs1 = [1,2,2]
-        yaqq_cf_dcmp_gs2 = [2,2,2]
-        nsa.cnfg_dcmp(yaqq_cf_dcmp_gs1,yaqq_cf_dcmp_gs2)
-
-
-
-        nsa.decompose_u()                   
+        # Least analytical, bad fidelity, fast = [1,1,1] : 'rand','rand','rand'               
          
         # yaqq_ds_dim = 3
         # yaqq_ds_type = 2
@@ -58,6 +78,7 @@ if __name__ == "__main__":
         # rps.plot_compare_gs(gs1, gs1_gates, pf01_db, cd01_db, gs2, gs2_gates, pf02_db, cd02_db, pfivt = True) 
 
     elif devmode == 'N':
+        autocfg = False
 
         print("\n  YAQQ has 4 configuration options:")
         print("     1. Operation Mode")
@@ -95,7 +116,7 @@ if __name__ == "__main__":
         nsa.cnfg_dcmp(yaqq_cf_dcmp_gs1,yaqq_cf_dcmp_gs2)
 
         if yaqq_mode == 3:
-            nsa.decompose_u()    # Dataset and costfunction selection not required for this mode
+            nsa.decompose_u(autocfg)    # Dataset and costfunction selection not required for this mode
             print("\n_____________________________________________________________________")
             print("\n--------------------- Thank you for using YAQQ. ---------------------")
             print("_____________________________________________________________________")
