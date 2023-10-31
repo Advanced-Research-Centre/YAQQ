@@ -2,6 +2,7 @@ from yaqq_ds import GenerateDataSet, VisualizeDataSet, ResultsPlotSave
 from yaqq_nus import NovelUniversalitySearch
 import configparser   # other choices: json, yaml, csv, xml
 import json
+import numpy as np
 
 ########################################################################################################################################################################################################
 
@@ -69,9 +70,13 @@ if __name__ == "__main__":
                     print(i, gs2[i])
                 print(opt_params)
             else:       
-                gs1, gs1_gates, pf01_db, cd01_db, gs2, gs2_gates, pf02_db, cd02_db = nsa.compare_gs(yaqq_ds, autocfg, Config)   
+                pass
+                # gs1, gs1_gates, pf01_db, cd01_db, gs2, gs2_gates, pf02_db, cd02_db = nsa.compare_gs(yaqq_ds, autocfg, Config)   
             
-            rps.plot_compare_gs(gs1, gs1_gates, pf01_db, cd01_db, gs2, gs2_gates, pf02_db, cd02_db, pfivt = True) 
+            # rps.plot_compare_gs(gs1, gs1_gates, pf01_db, cd01_db, gs2, gs2_gates, pf02_db, cd02_db, pfivt = True) 
+            pf02_db = np.load('results/data/hqec_eid_0001_pf2.npy', allow_pickle=True)
+            # print(pf02_db[0])
+            rps.vis_pf_Bloch(yaqq_ds, pf02_db)
 
         else:
             nsa.decompose_u(autocfg, Config)

@@ -263,6 +263,12 @@ class ResultsPlotSave:
 
     # ------------------------------------------------------------------------------------------------ #
 
+    def rgb_to_hex(self, r, g, b):
+
+        return '#{:02x}{:02x}{:02x}'.format(r, g, b)
+    
+    # ------------------------------------------------------------------------------------------------ #
+
     def plot_compare_gs(self, gs1, gs1_gates, pf1, cd1, gs2, gs2_gates, pf2, cd2, pfivt = False):
         
         avg_fid_gs01 = np.mean(pf1)
@@ -311,3 +317,27 @@ class ResultsPlotSave:
             np.save('results/data/'+exp_id+'cd2', cd2)
 
         plt.show()
+
+        # ------------------------------------------------------------------------------------------------ #
+
+    def vis_pf_Bloch(self, ds, pf):
+
+        b = qt.Bloch()
+        b.point_marker = ['o']
+        b.point_size = [20]
+        samples = len(ds)
+        color = []
+
+        for i in range(samples):
+            qc = QuantumCircuit(1)
+            qc.append(ds[i], [0])
+            sv = Statevector(qc).data
+            b.add_states(qt.Qobj(sv), kind='point')
+            # color.append(self.rgb_to_hex(int((pf[i]-min(pf))*255/(max(pf)-min(pf))),int(pf[i]*255),int(pf[i]*255)))
+            color.append(self.rgb_to_hex(int(pf[i]*255),int(pf[i]*255),int(pf[i]*255)))
+            
+        b.point_color = color
+        b.render()
+        plt.show()
+
+        return
