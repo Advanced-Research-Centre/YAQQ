@@ -481,7 +481,7 @@ class NovelUniversalitySearch:
         dist_pf_novelty = np.mean(abs(np.subtract(ivt_pf_gs01,pf02_db)))
         ivt_cd_gs01 = np.subtract(max(cd01_db),cd01_db)
         dist_cd_novelty = np.mean(abs(np.subtract(ivt_cd_gs01,cd02_db)))
-        dist_pf_avg = - np.mean(pf02_db)
+        dist_pf_avg = - np.mean(pf02_db) # -ve sign means it is maximizing
         dist_cd_avg = np.mean(cd02_db)
 
         cfn = self.w_apf*dist_pf_avg + self.w_npf*dist_pf_novelty + self.w_acd*dist_cd_avg + self.w_ncd*dist_cd_novelty + self.w_agf*self.cost_agf
