@@ -1,6 +1,6 @@
 from yaqq_ds import GenerateDataSet, VisualizeDataSet, ResultsPlotSave
 from yaqq_nus import NovelUniversalitySearch
-import configparser   # other choices: json, yaml, csv, xml
+import configparser
 import json
 import numpy as np
 
@@ -25,7 +25,7 @@ if __name__ == "__main__":
         autocfg = True
 
         Config = configparser.ConfigParser()
-        cfg_fname = input("\n  ===> Enter Configuration Filename (def.: QART_eid-0001): ") or 'HQEC_eid-0001'
+        cfg_fname = input("\n  ===> Enter Configuration Filename (def.: QART_eid-0001): ") or 'HQEC_eid-0002'
         Config.read("configs/"+cfg_fname+".cfg")
         
         yaqq_mode = int(Config['experiment']['yaqq_mode'])
@@ -70,13 +70,12 @@ if __name__ == "__main__":
                     print(i, gs2[i])
                 print(opt_params)
             else:       
-                pass
-                # gs1, gs1_gates, pf01_db, cd01_db, gs2, gs2_gates, pf02_db, cd02_db = nsa.compare_gs(yaqq_ds, autocfg, Config)   
+                gs1, gs1_gates, pf01_db, cd01_db, gs2, gs2_gates, pf02_db, cd02_db = nsa.compare_gs(yaqq_ds, autocfg, Config)   
             
-            # rps.plot_compare_gs(gs1, gs1_gates, pf01_db, cd01_db, gs2, gs2_gates, pf02_db, cd02_db, pfivt = True) 
-            pf02_db = np.load('results/data/hqec_eid_0001_pf2.npy', allow_pickle=True)
+            rps.plot_compare_gs(gs1, gs1_gates, pf01_db, cd01_db, gs2, gs2_gates, pf02_db, cd02_db, Config['result']['plt_pfivt'] == 'Y', autocfg, Config) 
+            # pf02_db = np.load('results/data/hqec_eid_0001_pf2.npy', allow_pickle=True)
             # print(pf02_db[0])
-            rps.vis_pf_Bloch(yaqq_ds, pf02_db)
+            # rps.vis_pf_Bloch(yaqq_ds, pf02_db)
 
         else:
             nsa.decompose_u(autocfg, Config)
@@ -137,6 +136,7 @@ if __name__ == "__main__":
             print("     2. Haar Random 2x2 Unitaries")
             print("     3. Equispaced States on Bloch Sphere using Golden mean")
             print("     4. Equispaced Angles on Bloch Sphere")
+            print("     5. Stabilizers and Magic States")
             yaqq_ds_type = int(input("\n  ===> Enter Data Set Type (def.: 3): ") or 3)
         elif yaqq_ds_dim == 2:
             print("\n Data Set Types for Dimension = 2:")
@@ -157,7 +157,7 @@ if __name__ == "__main__":
         elif yaqq_ds_dim == 2 and yaqq_ds_type == 4:
             yaqq_ds_reso = int(input("\n  ===> Enter Weyl Chamber cx Spacing (def.: 23, 508 points): ") or 23)
             yaqq_ds = gds.yaqq_gen_ds(yaqq_ds_dim, yaqq_ds_type, None, yaqq_ds_reso)
-        else:
+        elif yaqq_ds_dim == 1 and yaqq_ds_type != 5:
             yaqq_ds_size = int(input("\n  ===> Enter Data Set Size (def.: 508): ") or 508)
             yaqq_ds = gds.yaqq_gen_ds(yaqq_ds_dim, yaqq_ds_type, yaqq_ds_size, None)
 
@@ -171,7 +171,7 @@ if __name__ == "__main__":
 
         if yaqq_mode == 2:
             gs1, gs1_gates, pf01_db, cd01_db, gs2, gs2_gates, pf02_db, cd02_db = nsa.compare_gs(yaqq_ds, autocfg)     # Costfunction selection not required for this mode
-            rps.plot_compare_gs(gs1, gs1_gates, pf01_db, cd01_db, gs2, gs2_gates, pf02_db, cd02_db, pfivt = True) 
+            rps.plot_compare_gs(gs1, gs1_gates, pf01_db, cd01_db, gs2, gs2_gates, pf02_db, cd02_db, True, autocfg) 
             print("\n_____________________________________________________________________")
             print("\n--------------------- Thank you for using YAQQ. ---------------------")
             print("_____________________________________________________________________")
@@ -207,7 +207,7 @@ if __name__ == "__main__":
 
         gs1, gs1_gates, pf01_db, cd01_db, gs2, gs2_gates, pf02_db, cd02_db, opt_params = nsa.nusa(yaqq_ds,yaqq_cf_ngs,yaqq_ngs_search, autocfg)
         print("Novel Parameters for GS2: ", opt_params)
-        rps.plot_compare_gs(gs1, gs1_gates, pf01_db, cd01_db, gs2, gs2_gates, pf02_db, cd02_db, pfivt = True)  
+        rps.plot_compare_gs(gs1, gs1_gates, pf01_db, cd01_db, gs2, gs2_gates, pf02_db, cd02_db, True, autocfg)  
         print("\n_____________________________________________________________________")
         print("\n--------------------- Thank you for using YAQQ. ---------------------")
         print("_____________________________________________________________________")

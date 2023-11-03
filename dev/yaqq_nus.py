@@ -415,6 +415,7 @@ class NovelUniversalitySearch:
         if autocfg:
             yaqq_cf_gs1 = Config['mode2']['yaqq_cf_gs1'].split(',')
             yaqq_cf_gs2 = Config['mode2']['yaqq_cf_gs2'].split(',')
+            print(yaqq_cf_gs1, yaqq_cf_gs2)
             gs1, gs1_gates = self.def_gs(yaqq_cf_gs1)
             gs2, gs2_gates = self.def_gs(yaqq_cf_gs2)
         else:

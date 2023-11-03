@@ -10,6 +10,7 @@ from itertools import product
 import qutip as qt
 from qutip.measurement import measurement_statistics
 import matplotlib.pyplot as plt
+from datetime import datetime
 
 class GenerateDataSet:
 
@@ -25,7 +26,7 @@ class GenerateDataSet:
             ds = self.gen_ds_equiNL(ds_reso)
             ds_size = len(ds)
             print("\n  ===> YAQQ Data Set Generated for Dimension =", ds_dim, "Type =", ds_type, "Spacing =", ds_reso, "Size =", ds_size)
-        else:
+        elif ds_dim == 1 and ds_type != 5:
             if ds_type == 1:
                 ds = self.gen_ds_randS(ds_dim,  ds_size)
             elif ds_type == 2:
@@ -34,6 +35,10 @@ class GenerateDataSet:
                 ds = self.gen_ds_fiboS(ds_size)
             elif ds_dim == 2 and ds_type == 3:
                 ds = self.gen_ds_randNL(ds_size)
+            print("\n  ===> YAQQ Data Set Generated for Dimension = "+str(ds_dim)+", Type = "+str(ds_type)+", Size = "+str(ds_size))
+        else:
+            ds = self.gen_ds_quantumness()
+            ds_size = len(ds)
             print("\n  ===> YAQQ Data Set Generated for Dimension = "+str(ds_dim)+", Type = "+str(ds_type)+", Size = "+str(ds_size))
 
         return ds
@@ -351,7 +356,7 @@ class ResultsPlotSave:
     
     # ------------------------------------------------------------------------------------------------ #
 
-    def plot_compare_gs(self, gs1, gs1_gates, pf1, cd1, gs2, gs2_gates, pf2, cd2, pfivt = False):
+    def plot_compare_gs(self, gs1, gs1_gates, pf1, cd1, gs2, gs2_gates, pf2, cd2, pfivt, autocfg, Config = None):
         
         avg_fid_gs01 = np.mean(pf1)
         avg_fid_gs02 = np.mean(pf2)
@@ -364,7 +369,7 @@ class ResultsPlotSave:
         ax[0].plot(pf1, '-x', color = 'r', label = 'PF ['+gs1_gates+']')
         ax[0].plot(pf2, '-o', color = 'b', label = 'PF ['+gs2_gates+']')
         if pfivt:
-            ax[0].plot(ivt_fid_gs01, '-x', color = 'g', label = 'target PF trend')
+            ax[0].plot(ivt_fid_gs01, ':', color = 'g', label = 'target PF trend')
 
         ax[0].axhline(y=avg_fid_gs01, linestyle='-.', color = 'r' , label = 'avg.PF ['+gs1_gates+']')
         ax[0].axhline(y=avg_fid_gs02, linestyle='-.', color = 'b' , label = 'avg.PF ['+gs2_gates+']')
@@ -386,9 +391,16 @@ class ResultsPlotSave:
         # ax[1].set_xlabel("Equidistant Points")
         # plt.legend(ncol = 2, bbox_to_anchor = (1, 1.13))
 
-        save_res = input("Save plots and data? [Y/N] (def.: N): ") or 'N'
+        if autocfg:
+            save_res = Config['result']['yaqq_plt_save']
+            now = datetime.now()
+            exp_id = Config['general']['exp_name']+'_eid-'+Config['general']['exp_id']+'_'+now.strftime("%Y-%m-%d-%H-%M")
+        else:
+            save_res = input("Save plots and data? [Y/N] (def.: N): ") or 'N'
+            if save_res == 'Y':
+                exp_id = input("Enter experiment ID: ") or 'exp_1'
+        
         if save_res == 'Y':
-            exp_id = input("Enter experiment ID: ") or 'exp_1'
             plt.savefig('results/figures/'+exp_id+'.pdf')
             plt.savefig('results/figures/'+exp_id+'.png')      
             np.save('results/data/'+exp_id+'gs1', gs1)
@@ -416,7 +428,7 @@ class ResultsPlotSave:
             sv = Statevector(qc).data
             b.add_states(qt.Qobj(sv), kind='point')
             # color.append(self.rgb_to_hex(int((pf[i]-min(pf))*255/(max(pf)-min(pf))),int(pf[i]*255),int(pf[i]*255)))
-            color.append(self.rgb_to_hex(int(pf[i]*255),int(pf[i]*255),int(pf[i]*255)))
+            color.append(self.rgb_to_hex(int(pf[i]*255),int(pf[i]*255),int(pf[i]*255))) # TBD: https://matplotlib.org/stable/users/explain/colors/colorbar_only.html#sphx-glr-users-explain-colors-colorbar-only-py
             
         b.point_color = color
         b.render()
