@@ -192,6 +192,66 @@ class GenerateDataSet:
     
     # ------------------------------------------------------------------------------------------------ #
 
+    """
+    Data Set Generation: Magic and Stabilizer States
+    Ref: https://earltcampbell.com/research/magic-states/
+    """
+
+    def gen_ds_quantumness(self):
+
+        ds = []
+
+        # Stabilizer states
+        SS = [[0,1],                            # +Z
+              [1,0],                            # -Z
+              [1/np.sqrt(2),1/np.sqrt(2)],      # +X
+              [1/np.sqrt(2),-1/np.sqrt(2)],     # -X
+              [1/np.sqrt(2),1j/np.sqrt(2)],     # +Y
+              [1/np.sqrt(2),-1j/np.sqrt(2)]]    # -Y
+        for i in range(len(SS)):
+            qc = QuantumCircuit(1)
+            qc.prepare_state(SS[i], [0])
+            ds.append(UnitaryGate(Operator.from_circuit(qc),label='SS'+str(i)))
+          
+        # Magic states
+        qc = QuantumCircuit(1)                  # mid(+X,+Y,+Z)
+        qc.ry(np.pi/(2*np.sqrt(3)),0)
+        qc.p(np.pi/4,0)
+        ds.append(UnitaryGate(Operator.from_circuit(qc),label='MS0'))
+        qc = QuantumCircuit(1)                  # mid(+X,+Y,-Z)
+        qc.ry(np.pi - np.pi/(2*np.sqrt(3)),0)
+        qc.p(np.pi/4,0)
+        ds.append(UnitaryGate(Operator.from_circuit(qc),label='MS1'))
+        qc = QuantumCircuit(1)                  # mid(+X,-Y,+Z)
+        qc.ry(np.pi/(2*np.sqrt(3)),0)
+        qc.p(-np.pi/4,0)
+        ds.append(UnitaryGate(Operator.from_circuit(qc),label='MS2'))
+        qc = QuantumCircuit(1)                  # mid(+X,-Y,-Z)
+        qc.ry(np.pi - np.pi/(2*np.sqrt(3)),0)
+        qc.p(-np.pi/4,0)
+        ds.append(UnitaryGate(Operator.from_circuit(qc),label='MS3'))
+        
+        qc = QuantumCircuit(1)                  # mid(-X,+Y,+Z)
+        qc.ry(np.pi/(2*np.sqrt(3)),0)
+        qc.p(np.pi - np.pi/4,0)
+        ds.append(UnitaryGate(Operator.from_circuit(qc),label='MS4'))
+        qc = QuantumCircuit(1)                  # mid(-X,+Y,-Z)
+        qc.ry(np.pi - np.pi/(2*np.sqrt(3)),0)
+        qc.p(np.pi - np.pi/4,0)
+        ds.append(UnitaryGate(Operator.from_circuit(qc),label='MS5'))
+        qc = QuantumCircuit(1)                  # mid(-X,-Y,+Z)
+        qc.ry(np.pi/(2*np.sqrt(3)),0)
+        qc.p(np.pi + np.pi/4,0)
+        ds.append(UnitaryGate(Operator.from_circuit(qc),label='MS6'))
+        qc = QuantumCircuit(1)                  # mid(-X,-Y,-Z)
+        qc.ry(np.pi - np.pi/(2*np.sqrt(3)),0)
+        qc.p(np.pi + np.pi/4,0)
+        ds.append(UnitaryGate(Operator.from_circuit(qc),label='MS7'))
+
+        return ds
+    
+    # ------------------------------------------------------------------------------------------------ #
+
 class VisualizeDataSet:
 
     # ------------------------------------------------------------------------------------------------ #
