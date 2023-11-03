@@ -127,7 +127,29 @@ class GenerateDataSet:
             ds.append(UnitaryGate(equiU,label='EquiU'+str(points)))
 
         return ds
-    
+
+    # ------------------------------------------------------------------------------------------------ #
+
+    """
+    Data Set Generation: Equispaced Haar random on Bloch Sphere
+    TBD: need to debug
+    """
+
+    def gen_ds_equiU(self, px = 5):
+
+        ds = []
+        points = 0
+        param_phi = 2 * np.pi * np.linspace(0, 1, px, endpoint=False)
+        param_others = np.arcsin(np.sqrt(np.linspace(0, 1, px, endpoint=False)))
+        param = product(param_others,param_others,param_others,param_phi)   # alpha, psi, chi
+        print(len(list(param)))
+        for p in param:
+            U = np.exp(1j*p[0])*np.array([[np.exp(1j*p[1])*np.cos(p[3]), np.exp(1j*p[2])*np.sin(p[3])],[-np.exp(-1j*p[2])*np.sin(p[3]), np.exp(-1j*p[1])*np.cos(p[3])]])
+            points+= 1    
+            ds.append(UnitaryGate(U,label='EquiU'+str(points)))
+
+        return ds
+        
     # ------------------------------------------------------------------------------------------------ #
 
     """
