@@ -494,11 +494,9 @@ class NovelUniversalitySearch:
     def nusa(self, ds, ngs_cfg, optimize, autocfg, Config = None):
 
         # Define Gate Set 1 here
-        
-        yaqq_cf_ngs = Config['mode1']['yaqq_cf_ngs'].split(',')
         if autocfg:
             yaqq_cf_gs1 = Config['mode1']['yaqq_cf_gs1'].split(',')
-            gs1, gs1_gates = self.def_gs(yaqq_cf_gs1)
+            gs1, gs1_gates = self.def_gs(yaqq_cf_gs1)                   # TBD: Check that it should not have parametric gates
         else:
             gs1, gs1_gates = self.def_gs(['H1','T1','CX2'])
 
@@ -513,7 +511,7 @@ class NovelUniversalitySearch:
 
         # Cost function for optimization
         method = 'COBYLA'
-        maxiter = 1000
+        maxiter = 1
         trials = 0
         db_gs2_NL2 = []
         def cost_to_optimize(gs2_params):
@@ -561,8 +559,6 @@ class NovelUniversalitySearch:
                     cfn_best = cfn
                     cfn_best_db = [gs2, gs2_gates, pf02_db, cd02_db, params] 
             end = time.time()
-
-        np.save(f"results/data/db_gs2_H1T1NL2_iter{maxiter}_time{max_time}",db_gs2_NL2)
 
         return gs1, gs1_gates, pf01_db, cd01_db, cfn_best_db[0], cfn_best_db[1], cfn_best_db[2], cfn_best_db[3], cfn_best_db[4]
 

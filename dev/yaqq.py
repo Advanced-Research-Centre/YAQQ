@@ -19,7 +19,7 @@ if __name__ == "__main__":
     nsa = NovelUniversalitySearch()
     rps = ResultsPlotSave()
 
-    devmode = input("\n  ===> Run Default Configuration? [Y/N] (def.: Y): ") or 'Y'
+    devmode = input("\n  ===> Run from Configuration File? [Y/N] (def.: Y): ") or 'Y'
 
     if devmode == 'Y':
         autocfg = True
@@ -42,18 +42,18 @@ if __name__ == "__main__":
         nsa.cnfg_dcmp(yaqq_cf_dcmp_gs1,yaqq_cf_dcmp_gs2)
 
         if yaqq_mode == 1 or yaqq_mode == 2:
-            yaqq_ds_dim = int(Config['mode2']['yaqq_ds_dim'])
-            yaqq_ds_type = int(Config['mode2']['yaqq_ds_type'])                  
+            yaqq_ds_dim = int(Config['mode'+str(yaqq_mode)]['yaqq_ds_dim'])
+            yaqq_ds_type = int(Config['mode'+str(yaqq_mode)]['yaqq_ds_type'])                  
             if yaqq_ds_dim == 1 and yaqq_ds_type == 4:
-                yaqq_ds_reso = int(Config['mode2']['yaqq_ds_reso'])
+                yaqq_ds_reso = int(Config['mode'+str(yaqq_mode)]['yaqq_ds_reso'])
                 yaqq_ds = gds.yaqq_gen_ds(yaqq_ds_dim, yaqq_ds_type, None, yaqq_ds_reso)
             elif yaqq_ds_dim == 2 and yaqq_ds_type == 4:
-                yaqq_ds_reso = int(Config['mode2']['yaqq_ds_reso'])
+                yaqq_ds_reso = int(Config['mode'+str(yaqq_mode)]['yaqq_ds_reso'])
                 yaqq_ds = gds.yaqq_gen_ds(yaqq_ds_dim, yaqq_ds_type, None, yaqq_ds_reso)
             else:
-                yaqq_ds_size = int(Config['mode2']['yaqq_ds_size'])
+                yaqq_ds_size = int(Config['mode'+str(yaqq_mode)]['yaqq_ds_size'])
                 yaqq_ds = gds.yaqq_gen_ds(yaqq_ds_dim, yaqq_ds_type, yaqq_ds_size, None)
-            yaqq_ds_show = Config['mode2']['yaqq_ds_show']
+            yaqq_ds_show = Config['mode'+str(yaqq_mode)]['yaqq_ds_show']
             if yaqq_ds_show == 'Y':
                 if yaqq_ds_dim == 1:
                     vds.vis_ds_Bloch(yaqq_ds)
@@ -61,10 +61,10 @@ if __name__ == "__main__":
                     vds.vis_ds_Weyl(yaqq_ds)
 
             if yaqq_mode == 1:
-                yaqq_cf_wgts = json.loads(Config['experiment']['yaqq_cf_wgts'])
+                yaqq_cf_wgts = json.loads(Config['mode1']['yaqq_cf_wgts'])
                 nsa.cnfg_wgts(yaqq_cf_wgts)
                 yaqq_cf_ngs = Config['mode1']['yaqq_cf_ngs'].split(',')
-                yaqq_ngs_search = Config['mode2']['optimize']
+                yaqq_ngs_search = Config['mode1']['optimize']
                 gs1, gs1_gates, pf01_db, cd01_db, gs2, gs2_gates, pf02_db, cd02_db, opt_params = nsa.nusa(yaqq_ds,yaqq_cf_ngs,yaqq_ngs_search, autocfg, Config)
                 for i in gs2:
                     print(i, gs2[i])
