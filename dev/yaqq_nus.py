@@ -528,7 +528,7 @@ class NovelUniversalitySearch:
         # Optimize Gate Set 2
         param_ctr = self.gs_param_ctr(ngs_cfg)
         cfn_best, cfn_best_db = np.inf, []
-        max_time = 500       # in seconds
+        max_time = 5       # in seconds
         start = time.time()
         end = time.time()
 
@@ -547,6 +547,7 @@ class NovelUniversalitySearch:
                         pf02_db.append(pf)
                         cd02_db.append(cd)
                     cfn_best_db = [gs2, gs2_gates, pf02_db, cd02_db, res['x']] 
+                    break
             else:                   # Random search
                 gs2, gs2_gates = self.def_gs(ngs_cfg, params) 
                 pf02_db, cd02_db = [], []

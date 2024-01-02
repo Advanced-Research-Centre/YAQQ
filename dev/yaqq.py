@@ -25,7 +25,7 @@ if __name__ == "__main__":
         autocfg = True
 
         Config = configparser.ConfigParser()
-        cfg_fname = input("\n  ===> Enter Configuration Filename (def.: QART_eid-0001): ") or 'HQEC_eid-0002'
+        cfg_fname = input("\n  ===> Enter Configuration Filename (def.: QART_eid-0001): ") or 'NUSA_eid-0002'
         Config.read("configs/"+cfg_fname+".cfg")
         
         yaqq_mode = int(Config['experiment']['yaqq_mode'])
