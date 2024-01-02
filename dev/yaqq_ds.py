@@ -26,7 +26,11 @@ class GenerateDataSet:
             ds = self.gen_ds_equiNL(ds_reso)
             ds_size = len(ds)
             print("\n  ===> YAQQ Data Set Generated for Dimension =", ds_dim, "Type =", ds_type, "Spacing =", ds_reso, "Size =", ds_size)
-        elif ds_dim == 1 and ds_type != 5:
+        elif ds_dim == 1 and ds_type == 5:
+            ds = self.gen_ds_quantumness()
+            ds_size = len(ds)
+            print("\n  ===> YAQQ Data Set Generated for Dimension = "+str(ds_dim)+", Type = "+str(ds_type)+", Size = "+str(ds_size))
+        else:
             if ds_type == 1:
                 ds = self.gen_ds_randS(ds_dim,  ds_size)
             elif ds_type == 2:
@@ -35,10 +39,6 @@ class GenerateDataSet:
                 ds = self.gen_ds_fiboS(ds_size)
             elif ds_dim == 2 and ds_type == 3:
                 ds = self.gen_ds_randNL(ds_size)
-            print("\n  ===> YAQQ Data Set Generated for Dimension = "+str(ds_dim)+", Type = "+str(ds_type)+", Size = "+str(ds_size))
-        else:
-            ds = self.gen_ds_quantumness()
-            ds_size = len(ds)
             print("\n  ===> YAQQ Data Set Generated for Dimension = "+str(ds_dim)+", Type = "+str(ds_type)+", Size = "+str(ds_size))
 
         return ds
