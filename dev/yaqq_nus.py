@@ -510,8 +510,11 @@ class NovelUniversalitySearch:
             cd01_db.append(cd)
 
         # Cost function for optimization
+        if autocfg:
+            maxiter = int(Config['mode1']['opt_max_iter'])
+        else:
+            maxiter = 500 # 500 for final experiment
         method = 'COBYLA'
-        maxiter = 1 # 500 for final experiment
         trials = 0
         db_gs2_NL2 = []
         def cost_to_optimize(gs2_params):
@@ -528,7 +531,10 @@ class NovelUniversalitySearch:
         # Optimize Gate Set 2
         param_ctr = self.gs_param_ctr(ngs_cfg)
         cfn_best, cfn_best_db = np.inf, []
-        max_time = 500       # in seconds
+        if autocfg:
+            max_time = int(Config['mode1']['nus_max_time'])
+        else:
+            max_time = 500       # in seconds
         start = time.time()
         end = time.time()
 
