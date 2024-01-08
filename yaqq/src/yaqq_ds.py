@@ -10,6 +10,7 @@ from itertools import product
 import qutip as qt
 from qutip.measurement import measurement_statistics
 import matplotlib.pyplot as plt
+from datetime import datetime
 
 class GenerateDataSet:
 
@@ -25,6 +26,10 @@ class GenerateDataSet:
             ds = self.gen_ds_equiNL(ds_reso)
             ds_size = len(ds)
             print("\n  ===> YAQQ Data Set Generated for Dimension =", ds_dim, "Type =", ds_type, "Spacing =", ds_reso, "Size =", ds_size)
+        elif ds_dim == 1 and ds_type == 5:
+            ds = self.gen_ds_quantumness()
+            ds_size = len(ds)
+            print("\n  ===> YAQQ Data Set Generated for Dimension = "+str(ds_dim)+", Type = "+str(ds_type)+", Size = "+str(ds_size))
         else:
             if ds_type == 1:
                 ds = self.gen_ds_randS(ds_dim,  ds_size)
@@ -127,7 +132,29 @@ class GenerateDataSet:
             ds.append(UnitaryGate(equiU,label='EquiU'+str(points)))
 
         return ds
-    
+
+    # ------------------------------------------------------------------------------------------------ #
+
+    """
+    Data Set Generation: Equispaced Haar random on Bloch Sphere
+    TBD: need to debug
+    """
+
+    def gen_ds_equiU(self, px = 5):
+
+        ds = []
+        points = 0
+        param_phi = 2 * np.pi * np.linspace(0, 1, px, endpoint=False)
+        param_others = np.arcsin(np.sqrt(np.linspace(0, 1, px, endpoint=False)))
+        param = product(param_others,param_others,param_others,param_phi)   # alpha, psi, chi
+        print(len(list(param)))
+        for p in param:
+            U = np.exp(1j*p[0])*np.array([[np.exp(1j*p[1])*np.cos(p[3]), np.exp(1j*p[2])*np.sin(p[3])],[-np.exp(-1j*p[2])*np.sin(p[3]), np.exp(-1j*p[1])*np.cos(p[3])]])
+            points+= 1    
+            ds.append(UnitaryGate(U,label='EquiU'+str(points)))
+
+        return ds
+        
     # ------------------------------------------------------------------------------------------------ #
 
     """
@@ -165,6 +192,66 @@ class GenerateDataSet:
             if weylchamber.point_in_weyl_chamber(c1,c2,c3):
                 valid_points+= 1
                 ds.append(UnitaryGate(weylchamber.canonical_gate(c1,c2,c3),label='RndU'+str(valid_points)))   
+
+        return ds
+    
+    # ------------------------------------------------------------------------------------------------ #
+
+    """
+    Data Set Generation: Magic and Stabilizer States
+    Ref: https://earltcampbell.com/research/magic-states/
+    """
+
+    def gen_ds_quantumness(self):
+
+        ds = []
+
+        # Stabilizer states
+        SS = [[0,1],                            # +Z
+              [1,0],                            # -Z
+              [1/np.sqrt(2),1/np.sqrt(2)],      # +X
+              [1/np.sqrt(2),-1/np.sqrt(2)],     # -X
+              [1/np.sqrt(2),1j/np.sqrt(2)],     # +Y
+              [1/np.sqrt(2),-1j/np.sqrt(2)]]    # -Y
+        for i in range(len(SS)):
+            qc = QuantumCircuit(1)
+            qc.prepare_state(SS[i], [0])
+            ds.append(UnitaryGate(Operator.from_circuit(qc),label='SS'+str(i)))
+          
+        # Magic states
+        qc = QuantumCircuit(1)                  # mid(+X,+Y,+Z)
+        qc.ry(np.pi/(2*np.sqrt(3)),0)
+        qc.p(np.pi/4,0)
+        ds.append(UnitaryGate(Operator.from_circuit(qc),label='MS0'))
+        qc = QuantumCircuit(1)                  # mid(+X,+Y,-Z)
+        qc.ry(np.pi - np.pi/(2*np.sqrt(3)),0)
+        qc.p(np.pi/4,0)
+        ds.append(UnitaryGate(Operator.from_circuit(qc),label='MS1'))
+        qc = QuantumCircuit(1)                  # mid(+X,-Y,+Z)
+        qc.ry(np.pi/(2*np.sqrt(3)),0)
+        qc.p(-np.pi/4,0)
+        ds.append(UnitaryGate(Operator.from_circuit(qc),label='MS2'))
+        qc = QuantumCircuit(1)                  # mid(+X,-Y,-Z)
+        qc.ry(np.pi - np.pi/(2*np.sqrt(3)),0)
+        qc.p(-np.pi/4,0)
+        ds.append(UnitaryGate(Operator.from_circuit(qc),label='MS3'))
+        
+        qc = QuantumCircuit(1)                  # mid(-X,+Y,+Z)
+        qc.ry(np.pi/(2*np.sqrt(3)),0)
+        qc.p(np.pi - np.pi/4,0)
+        ds.append(UnitaryGate(Operator.from_circuit(qc),label='MS4'))
+        qc = QuantumCircuit(1)                  # mid(-X,+Y,-Z)
+        qc.ry(np.pi - np.pi/(2*np.sqrt(3)),0)
+        qc.p(np.pi - np.pi/4,0)
+        ds.append(UnitaryGate(Operator.from_circuit(qc),label='MS5'))
+        qc = QuantumCircuit(1)                  # mid(-X,-Y,+Z)
+        qc.ry(np.pi/(2*np.sqrt(3)),0)
+        qc.p(np.pi + np.pi/4,0)
+        ds.append(UnitaryGate(Operator.from_circuit(qc),label='MS6'))
+        qc = QuantumCircuit(1)                  # mid(-X,-Y,-Z)
+        qc.ry(np.pi - np.pi/(2*np.sqrt(3)),0)
+        qc.p(np.pi + np.pi/4,0)
+        ds.append(UnitaryGate(Operator.from_circuit(qc),label='MS7'))
 
         return ds
     
@@ -263,7 +350,13 @@ class ResultsPlotSave:
 
     # ------------------------------------------------------------------------------------------------ #
 
-    def plot_compare_gs(self, gs1, gs1_gates, pf1, cd1, gs2, gs2_gates, pf2, cd2, pfivt = False):
+    def rgb_to_hex(self, r, g, b):
+
+        return '#{:02x}{:02x}{:02x}'.format(r, g, b)
+    
+    # ------------------------------------------------------------------------------------------------ #
+
+    def plot_compare_gs(self, gs1, gs1_gates, pf1, cd1, gs2, gs2_gates, pf2, cd2, pfivt, autocfg, Config = None):
         
         avg_fid_gs01 = np.mean(pf1)
         avg_fid_gs02 = np.mean(pf2)
@@ -276,7 +369,7 @@ class ResultsPlotSave:
         ax[0].plot(pf1, '-x', color = 'r', label = 'PF ['+gs1_gates+']')
         ax[0].plot(pf2, '-o', color = 'b', label = 'PF ['+gs2_gates+']')
         if pfivt:
-            ax[0].plot(ivt_fid_gs01, '-x', color = 'g', label = 'target PF trend')
+            ax[0].plot(ivt_fid_gs01, ':', color = 'g', label = 'target PF trend')
 
         ax[0].axhline(y=avg_fid_gs01, linestyle='-.', color = 'r' , label = 'avg.PF ['+gs1_gates+']')
         ax[0].axhline(y=avg_fid_gs02, linestyle='-.', color = 'b' , label = 'avg.PF ['+gs2_gates+']')
@@ -298,12 +391,47 @@ class ResultsPlotSave:
         # ax[1].set_xlabel("Equidistant Points")
         # plt.legend(ncol = 2, bbox_to_anchor = (1, 1.13))
 
-        save_res = input("Save plots and data? [Y/N] (def.: N): ") or 'N'
+        if autocfg:
+            save_res = Config['result']['yaqq_plt_save']
+            now = datetime.now()
+            exp_id = Config['general']['exp_name']+'_eid-'+Config['general']['exp_id']+'_'+now.strftime("%Y-%m-%d-%H-%M")
+        else:
+            save_res = input("Save plots and data? [Y/N] (def.: N): ") or 'N'
+            if save_res == 'Y':
+                exp_id = input("Enter experiment ID: ") or 'exp_1'
+        
         if save_res == 'Y':
-            exp_id = input("Enter experiment ID: ") or 'exp_1'
             plt.savefig('results/figures/'+exp_id+'.pdf')
             plt.savefig('results/figures/'+exp_id+'.png')      
             np.save('results/data/'+exp_id+'gs1', gs1)
+            np.save('results/data/'+exp_id+'pf1', pf1)
+            np.save('results/data/'+exp_id+'cd1', cd1)
             np.save('results/data/'+exp_id+'gs2', gs2)
+            np.save('results/data/'+exp_id+'pf2', pf2)
+            np.save('results/data/'+exp_id+'cd2', cd2)
 
         plt.show()
+
+        # ------------------------------------------------------------------------------------------------ #
+
+    def vis_pf_Bloch(self, ds, pf):
+
+        b = qt.Bloch()
+        b.point_marker = ['o']
+        b.point_size = [20]
+        samples = len(ds)
+        color = []
+
+        for i in range(samples):
+            qc = QuantumCircuit(1)
+            qc.append(ds[i], [0])
+            sv = Statevector(qc).data
+            b.add_states(qt.Qobj(sv), kind='point')
+            # color.append(self.rgb_to_hex(int((pf[i]-min(pf))*255/(max(pf)-min(pf))),int(pf[i]*255),int(pf[i]*255)))
+            color.append(self.rgb_to_hex(int(pf[i]*255),int(pf[i]*255),int(pf[i]*255))) # TBD: https://matplotlib.org/stable/users/explain/colors/colorbar_only.html#sphx-glr-users-explain-colors-colorbar-only-py
+            
+        b.point_color = color
+        b.render()
+        plt.show()
+
+        return

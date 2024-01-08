@@ -8,7 +8,7 @@ from pathlib import Path
 this_directory = Path(__file__).parent
 
 name = 'yaqq'
-version = '0.13.5'
+version = '0.13.6'
 description = 'Yet Another Quantum Quantizer - Design Space Exploration of Quantum Gate Sets using Novelty Search'
 long_description = (this_directory / "README.md").read_text()
 url = 'https://github.com/Advanced-Research-Centre/YAQQ'

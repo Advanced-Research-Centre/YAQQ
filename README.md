@@ -34,6 +34,103 @@ The YAQQ operates in 2 modes: (a) it can `compare` two gate sets hardcoded based
 
 If the generate mode is selected, the user has a further choice of the method used to search the space of gate sets. We currently support 2 methods: (a) `random` search, where new Haar random unitaries are used as gate set and their expressive power is evaluated, (b) an `optimization` routine finds the configuration for single qubit generalized rotation gates to form the gate set. 
 
+### Usage Example (from configuration file):
+
+#### Configuration File
+
+configs\NUSA_eid-0006.cfg
+
+```
+[general]
+    exp_name = NUSA
+    exp_id = 0006
+
+[experiment]
+    yaqq_mode = 1
+    yaqq_cf_dcmp_gs1 = [1,2,2]
+    yaqq_cf_dcmp_gs2 = [1,2,2]
+
+[mode1]
+    yaqq_ds_dim = 1
+    yaqq_ds_type = 2
+    yaqq_ds_reso = 16
+    yaqq_ds_size = 3
+    yaqq_ds_show = N
+    yaqq_cf_wgts = [50,1,1,1,1]
+    yaqq_cf_gs1 = H1,T1,CX2
+    yaqq_cf_ngs = R1,P1,NL2
+    nus_max_time = 60
+    optimize = Y
+    opt_max_iter = 500
+
+[result]
+    plt_pfivt = Y
+    yaqq_plt_save = Y
+```
+
+#### Execution
+
+```
+(env) [path]>python yaqq.py
+
+_____________________________________________________________________
+
+           Welcome to YAQQ: Yet Another Quantum Quantizer.
+
+Copyright © 2023 Quantum Intelligence Research Group; AGPL v3 License
+
+  Code repository: https://github.com/Advanced-Research-Centre/YAQQ
+_____________________________________________________________________
+
+  ===> Run from Configuration File? [Y/N] (def.: Y): Y
+
+  ===> Enter Configuration Filename (e.g.: NUSA_eid-0006): NUSA_eid-0006
+
+  ===> YAQQ Data Set Generated for Dimension = 1, Type = 2, Size = 3
+
+  Decomposing Data Set into Gate Set 1:[1H1,2T1,3CX2]
+
+100%|█████████████████████████████████████████████████████████████████████████████████████████████| 3/3 [00:07<00:00,  2.33s/it] 
+
+  Decomposing Data Set into Gate Set 2, trials = 1
+
+1R1 Instruction(name='unitary', num_qubits=1, num_clbits=0, params=[array([[-0.40623416-0.72835851j,  0.53061472-0.15137933j],
+       [-0.50324576+0.22629933j,  0.15892188+0.81870395j]])])
+2P1 Instruction(name='unitary', num_qubits=1, num_clbits=0, params=[array([[-0.13734808+0.j        ,  0.17919774-0.97417846j],
+       [-0.99019932-0.02531439j, -0.02829207+0.13440258j]])])
+3NL2 Instruction(name='unitary', num_qubits=2, num_clbits=0, params=[array([[0.36541038+0.59277413j, 0.        +0.j        ,
+        0.        +0.j        , 0.61094735-0.3766131j ],
+       [0.        +0.j        , 0.14533008-0.2357566j ,
+        0.81795883+0.5042235j , 0.        +0.j        ],
+       [0.        +0.j        , 0.81795883+0.5042235j ,
+        0.14533008-0.2357566j , 0.        +0.j        ],
+       [0.61094735-0.3766131j , 0.        +0.j        ,
+        0.        +0.j        , 0.36541038+0.59277413j]])])
+[1.08771578 1.0081358  0.55790501 0.15587061 0.66548127 0.64831789]
+
+_____________________________________________________________________
+
+--------------------- Thank you for using YAQQ. ---------------------
+_____________________________________________________________________
+```
+
+#### Results
+
+The following files hold the raw data:
+ * results\data\NUSA_eid-0006_2024-01-08-11-12cd1.npy (circuit depths using gs1)
+ * results\data\NUSA_eid-0006_2024-01-08-11-12cd2.npy (circuit depths using gs2)
+ * results\data\NUSA_eid-0006_2024-01-08-11-12gs1.npy (unitaries for gs1)
+ * results\data\NUSA_eid-0006_2024-01-08-11-12gs2.npy (unitaries for gs2)
+ * results\data\NUSA_eid-0006_2024-01-08-11-12pf1.npy (process fidelity using gs1)
+ * results\data\NUSA_eid-0006_2024-01-08-11-12pf2.npy (process fidelity using gs2)
+
+The visual comparison of the gate sets is stored in:
+ * results\figures\NUSA_eid-0006_2024-01-08-11-12.pdf
+ * results\figures\NUSA_eid-0006_2024-01-08-11-12.png (shown below)
+
+![YAQQ Demo 1](./dev/results/figures/NUSA_eid-0006_2024-01-08-11-12.png)
+
+
 ### Example run (to be updated):
 
 ```

@@ -11,7 +11,7 @@ in yaqq/setup.py, change version number
 from yaqq folder, run: 
     python -m build
     twine upload dist/*
-use token and key
+use token and key (from Aritra's Google Drive YAQQ project folder)
 """
 
 # Step 3: install YAQQ package from pypi
