@@ -130,7 +130,6 @@ The visual comparison of the gate sets is stored in:
 
 ![YAQQ Demo 1](./dev/results/figures/NUSA_eid-0006_2024-01-08-11-12.png)
 
-
 ### Example run (to be updated):
 
 ```
@@ -195,6 +194,7 @@ Feel free to report issues during build or execution. We also welcome suggestion
 6. The YAQQ name is inspired by the [YACC](https://en.wikipedia.org/wiki/Yacc) - a compiler-compiler, or a compiler-generator. In a similar way YAQQ provides the set of decompositions for the generated gate set.
 
 ### Development plans:
+- [ ] Use Boran's KetGPT as a dataset
 - [ ] See if tradeoff exists between gate set size and 2 scores
 - [ ] Plot gate set as points on [Weyl chamber](https://weylchamber.readthedocs.io/en/latest/tutorial.html), e.g., HxI, IxH, TxI, IxT, CX
 - [ ] Equispaced states in higher dimension Hilbert space (under some distance measure)

@@ -226,8 +226,8 @@ class NovelUniversalitySearch:
     def dcmp_U_gs(self, U, gs, gsid = 0):
         
         dim = int(np.log2(Choi(U).dim[0]))
-        rand_trials = 100
-        rand_max_depth = 500
+        rand_trials = 100                   # TBD: Adjust based on dimension of unitary
+        rand_max_depth = 500                # TBD: Adjust based on dimension of unitary
 
         if dim > 2 and self.d_nq[gsid] == 1:      # Random n-qubit decomposition
             # Decompose using gates in gs1, no further decompositions required
@@ -313,7 +313,7 @@ class NovelUniversalitySearch:
             pf, cd, qc = self.dcmp_rand(U, gs, trials = rand_trials, max_depth = rand_max_depth)
         elif dim == 1 and self.d_1q[gsid] == 2:   # Solovay-Kitaev decomposition
             gbs = gen_basis_seq()
-            skt_obj = SolovayKitaev(recursion_degree = 3, basic_approximations = gbs.generate_basic_approximations(self.skt_gs(gs)))  # declare SKT object, larger recursion depth increases the accuracy and length of the decomposition
+            skt_obj = SolovayKitaev(recursion_degree = 8, basic_approximations = gbs.generate_basic_approximations(self.skt_gs(gs)))  # declare SKT object, larger recursion depth increases the accuracy and length of the decomposition
             pf, cd, qc = self.dcmp_skt(U, skt_obj)
 
         return pf, cd, qc
@@ -504,10 +504,12 @@ class NovelUniversalitySearch:
         samples = len(ds)
         pf01_db, cd01_db = [], []
         print("\n  Decomposing Data Set into Gate Set 1:["+gs1_gates+"] \n")
-        for i in tqdm(range(samples)):   
-            pf, cd, _ = self.dcmp_U_gs(ds[i], gs1, gsid = 0)
-            pf01_db.append(pf)
-            cd01_db.append(cd)
+        with tqdm(range(samples)) as t:
+            for i in t:   
+                pf, cd, _ = self.dcmp_U_gs(ds[i], gs1, gsid = 0)
+                pf01_db.append(pf)
+                cd01_db.append(cd)
+            t_1gs = t.format_dict['elapsed']
 
         # Cost function for optimization
         if autocfg:
@@ -543,6 +545,7 @@ class NovelUniversalitySearch:
             print("\n  Decomposing Data Set into Gate Set 2, trials = "+str(trials)+"\n") 
             params = np.random.rand(param_ctr)
             if optimize == 'Y':     # SciPy optimize
+                print("  Estimated max. run time for 1 optimization trial = "+str(t_1gs*maxiter)+"\n") 
                 res = minimize(cost_to_optimize, params, method = method, options={'maxiter': maxiter})
                 if res['fun'] <= cfn_best:
                     cfn_best = res['fun']
