@@ -1,62 +1,52 @@
 import numpy as np
 import matplotlib.pyplot as plt
-plt.rcParams['text.usetex'] = True
-search = ['randsearch', 'scipy']
-gateset = ['p1h1t1', 'p1p1']
-# fig, ax = plt.subplots(1, 2, figsize = (7,4))
-# gateset = gateset[0]
-search, gateset = search[1], gateset[0]
-decomp = 'sk'
-# rand_search_pf1 = np.load(f'results/data/data_typ1_gateset_p1h1t1_iter100_time100_{search}_100_data_pf1.npy', allow_pickle=True)
-# rand_search_pf2 = np.load(f'results/data/data_typ1_gateset_p1h1t1_iter100_time100_{search}_100_data_pf2.npy', allow_pickle=True)
-# rand_search_cd1 = np.load(f'results/data/data_typ1_gateset_p1h1t1_iter100_time100_{search}_100_data_cd1.npy', allow_pickle=True)
-# rand_search_cd2 = np.load(f'results/data/data_typ1_gateset_p1h1t1_iter100_time100_{search}_100_data_cd2.npy', allow_pickle=True)
-# data_typ1_sk_decomp_p1p1_iter100_time100_scipy_50_1_1_1_0_pf2
-x = []
-for w1 in [50]:
-    print('weight', f'{decomp} decompostion', f'{gateset} gateset', 'weight:', [w1,1,1,1,0])
-    if decomp == 'sk':
-        rand_search_pf1 = np.load(f'results/data/data_typ1_sk_decomp_{gateset}_iter100_time100_{search}_{w1}_1_1_1_0_pf1.npy', allow_pickle=True)
-        rand_search_pf2 = np.load(f'results/data/data_typ1_sk_decomp_{gateset}_iter100_time100_{search}_{w1}_1_1_1_0_pf2.npy', allow_pickle=True)
-        rand_search_cd1 = np.load(f'results/data/data_typ1_sk_decomp_{gateset}_iter100_time100_{search}_{w1}_1_1_1_0_cd1.npy', allow_pickle=True)
-        rand_search_cd2 = np.load(f'results/data/data_typ1_sk_decomp_{gateset}_iter100_time100_{search}_{w1}_1_1_1_0_cd2.npy', allow_pickle=True)
 
-    elif decomp == 'random':
-        if w1 == 0:
-            rand_search_pf1 = np.load(f'results/data/data_typ1_gateset_{gateset}_iter100_time100_{search}_pf1.npy', allow_pickle=True)
-            rand_search_pf2 = np.load(f'results/data/data_typ1_gateset_{gateset}_iter100_time100_{search}_pf2.npy', allow_pickle=True)
-            rand_search_cd1 = np.load(f'results/data/data_typ1_gateset_{gateset}_iter100_time100_{search}_cd1.npy', allow_pickle=True)
-            rand_search_cd2 = np.load(f'results/data/data_typ1_gateset_{gateset}_iter100_time100_{search}_cd2.npy', allow_pickle=True)
-        else:
-            rand_search_pf1 = np.load(f'results/data/data_typ1_gateset_{gateset}_iter100_time100_{search}_{w1}_1_1_1_0_pf1.npy', allow_pickle=True)
-            rand_search_pf2 = np.load(f'results/data/data_typ1_gateset_{gateset}_iter100_time100_{search}_{w1}_1_1_1_0_pf2.npy', allow_pickle=True)
-            rand_search_cd1 = np.load(f'results/data/data_typ1_gateset_{gateset}_iter100_time100_{search}_{w1}_1_1_1_0_cd1.npy', allow_pickle=True)
-            rand_search_cd2 = np.load(f'results/data/data_typ1_gateset_{gateset}_iter100_time100_{search}_{w1}_1_1_1_0_cd2.npy', allow_pickle=True)
+# expname = 'results/data/NUSA_eid-0003_2024-01-05-22-22'     # 2 qubit
+# gs2_gates = 'P1,P1,NL2'
+# expname = 'results/data/NUSA_eid-0004_2024-01-05-20-40'     # 2 qubit 
+# gs2_gates = 'R1,P1,SPE2'
+expname = 'results/data/NUSA_eid-0005_2024-01-05-18-35'     # 3 qubit       (for paper)
+gs2_gates = 'P1,P1,SPE2'
+# expname = 'results/data/NUSA_eid-0006_2024-01-08-11-12'   # 1 qubit
+# expname = 'results/data/NUSA_eid-0007_2024-01-09-11-32'   # 3 qubit
+# gs2_gates = 'R1,P1,SPE2'
 
-# ax[0].plot(rand_search_pf1, 'r-', label = '[H,T]')
-# # ax[0].plot(rand_search_pf2, 'b--', label = '$[P(\\theta),H,T]$')
-# ax[0].axhline(y=np.mean(rand_search_pf1), linestyle='-.', color = 'r', label = '[H,T]')
-# ax[0].axhline(y=np.mean(rand_search_pf2), linestyle='-.', color = 'b', label = '$[P(\\theta),H,T]$')
-# # ax[1].semilogy(rand_search_cd1, 'r-x')
-# # ax[1].plot(rand_search_cd2, 'b-o')
+pf1 = np.load(expname+'pf1.npy', allow_pickle=True)
+pf2 = np.load(expname+'pf2.npy', allow_pickle=True)
+cd1 = np.load(expname+'cd1.npy', allow_pickle=True)
+cd2 = np.load(expname+'cd2.npy', allow_pickle=True)
+# gs1 = np.load(expname+'gs1.npy', allow_pickle=True)
+# gs2 = np.load(expname+'gs2.npy', allow_pickle=True)
 
-# ax[1].axhline(y=np.mean(rand_search_cd1), linestyle='-.', color = 'r', label = '[H,T]')
-# ax[1].axhline(y=np.mean(rand_search_cd2), linestyle='-.', color = 'b', label = '$[P(\\theta),H,T]$')
+gs1_gates = 'H1,T1,CX2'
 
+avg_fid_gs01 = np.mean(pf1)
+avg_fid_gs02 = np.mean(pf2)
+avg_dep_gs01 = np.mean(cd1)
+avg_dep_gs02 = np.mean(cd2) 
 
-    print(f'gateset [H,T] average process fidelity ({search}):', np.mean(rand_search_pf1))
-    print(f'gateset {gateset} average process fidelity ({search}):', np.mean(rand_search_pf2))
-    print(f'gateset [H,T] average depth ({search}):', np.mean(rand_search_cd1))
-    print(f'gateset {gateset} average depth ({search}):', np.mean(rand_search_cd2))
-    x.append(np.mean(rand_search_pf2) - np.mean(rand_search_pf1))
-    print()
-# plt.plot([0,50,100,150,200], x, '-o', label = '(pf2-pf1)')
-# # plt.legend()
-# plt.xticks([0,50,100,150,200])
-# plt.xlabel('$w_{apf}$')
-# plt.ylabel('$\\mathcal{P}_{f_n} - \\mathcal{P}_{f}$')
-# plt.title('$G(\\theta),H,T$')
-# # ax[0].legend()
-# # ax[0].set_ylim([0.8,1])
+ivt_fid_gs01 = np.subtract(1,pf1)
 
-# plt.show()
+_, ax = plt.subplots(1, 2)
+ax[0].plot(pf1, '-x', color = 'r', label = 'PF ['+gs1_gates+']')
+ax[0].plot(pf2, '-o', color = 'b', label = 'PF ['+gs2_gates+']')
+
+# ax[0].plot(ivt_fid_gs01, ':', color = 'g', label = 'target PF trend')
+
+ax[0].axhline(y=avg_fid_gs01, linestyle='-.', color = 'r' , label = 'avg.PF ['+gs1_gates+']')
+ax[0].axhline(y=avg_fid_gs02, linestyle='-.', color = 'b' , label = 'avg.PF ['+gs2_gates+']')
+
+ax[1].plot(cd1, '-x', color = 'r', label = 'CD ['+gs1_gates+']')
+ax[1].plot(cd2, '-o', color = 'b', label = 'CD ['+gs2_gates+']')
+
+ax[1].axhline(y=avg_dep_gs01, linestyle='-.', color = 'r', label = 'avg.CD ['+gs1_gates+']')
+ax[1].axhline(y=avg_dep_gs02, linestyle='-.', color = 'b', label = 'avg.CD ['+gs2_gates+']')
+
+ax[0].set_ylabel("Process Fidelity")
+ax[1].set_ylabel("Circuit Depth")
+# ax[0].set_ylim(bottom=0,top=1)
+# ax[1].set_ylim(bottom=0,top=None)
+ax[0].legend()
+ax[1].legend()
+
+plt.show()
