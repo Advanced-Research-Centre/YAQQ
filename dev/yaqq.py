@@ -59,6 +59,10 @@ if __name__ == "__main__":
                     vds.vis_ds_Bloch(yaqq_ds)
                 else:
                     vds.vis_ds_Weyl(yaqq_ds)
+            yaqq_ds_save = Config['mode'+str(yaqq_mode)]['yaqq_ds_save']
+            if yaqq_ds_save == 'Y':
+                gds.save_ds(yaqq_ds, Config)
+
 
             if yaqq_mode == 1:
                 yaqq_cf_wgts = json.loads(Config['mode1']['yaqq_cf_wgts'])

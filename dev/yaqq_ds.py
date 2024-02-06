@@ -257,6 +257,15 @@ class GenerateDataSet:
     
     # ------------------------------------------------------------------------------------------------ #
 
+    def save_ds(self, yaqq_ds, Config = None):
+             
+        now = datetime.now()
+        exp_id = Config['general']['exp_name']+'_eid-'+Config['general']['exp_id']+'_'+now.strftime("%Y-%m-%d-%H-%M")
+        np.save('results/data/'+exp_id+'ds', yaqq_ds)
+        return
+
+    # ------------------------------------------------------------------------------------------------ #
+
 class VisualizeDataSet:
 
     # ------------------------------------------------------------------------------------------------ #

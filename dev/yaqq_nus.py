@@ -313,7 +313,7 @@ class NovelUniversalitySearch:
             pf, cd, qc = self.dcmp_rand(U, gs, trials = rand_trials, max_depth = rand_max_depth)
         elif dim == 1 and self.d_1q[gsid] == 2:   # Solovay-Kitaev decomposition
             gbs = gen_basis_seq()
-            skt_obj = SolovayKitaev(recursion_degree = 8, basic_approximations = gbs.generate_basic_approximations(self.skt_gs(gs)))  # declare SKT object, larger recursion depth increases the accuracy and length of the decomposition
+            skt_obj = SolovayKitaev(recursion_degree = 3, basic_approximations = gbs.generate_basic_approximations(self.skt_gs(gs)))  # declare SKT object, larger recursion depth increases the accuracy and length of the decomposition
             pf, cd, qc = self.dcmp_skt(U, skt_obj)
 
         return pf, cd, qc
