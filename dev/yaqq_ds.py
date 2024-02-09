@@ -16,6 +16,18 @@ class GenerateDataSet:
 
     # ------------------------------------------------------------------------------------------------ #
 
+    def load_ds(self):
+             
+        ds_fname = input("\n  ===> Enter Dataset Filename (e.g.: NUSA_eid-0010_2024-02-09-11-26ds): " or 'NUSA_eid-0010_2024-02-09-11-26ds')
+        ds = np.load('results/data/'+ds_fname+'.npy', allow_pickle=True)
+        ds_dim = len(ds[0].to_matrix())
+        ds_size = len(ds)
+        print("\n  ===> YAQQ Data Set Loaded = "+str(ds_dim)+", Size = "+str(ds_size))
+
+        return ds_dim, ds
+    
+    # ------------------------------------------------------------------------------------------------ #
+
     def yaqq_gen_ds(self, ds_dim, ds_type, ds_size, ds_reso):
 
         if ds_dim == 1 and ds_type == 4:

@@ -42,23 +42,28 @@ if __name__ == "__main__":
         nsa.cnfg_dcmp(yaqq_cf_dcmp_gs1,yaqq_cf_dcmp_gs2)
 
         if yaqq_mode == 1 or yaqq_mode == 2:
-            yaqq_ds_dim = int(Config['mode'+str(yaqq_mode)]['yaqq_ds_dim'])
-            yaqq_ds_type = int(Config['mode'+str(yaqq_mode)]['yaqq_ds_type'])                  
-            if yaqq_ds_dim == 1 and yaqq_ds_type == 4:
-                yaqq_ds_reso = int(Config['mode'+str(yaqq_mode)]['yaqq_ds_reso'])
-                yaqq_ds = gds.yaqq_gen_ds(yaqq_ds_dim, yaqq_ds_type, None, yaqq_ds_reso)
-            elif yaqq_ds_dim == 2 and yaqq_ds_type == 4:
-                yaqq_ds_reso = int(Config['mode'+str(yaqq_mode)]['yaqq_ds_reso'])
-                yaqq_ds = gds.yaqq_gen_ds(yaqq_ds_dim, yaqq_ds_type, None, yaqq_ds_reso)
+            yaqq_ds_load = Config['mode'+str(yaqq_mode)]['yaqq_ds_load']
+            if yaqq_ds_load == 'Y':
+                yaqq_ds_dim, yaqq_ds = gds.load_ds()
             else:
-                yaqq_ds_size = int(Config['mode'+str(yaqq_mode)]['yaqq_ds_size'])
-                yaqq_ds = gds.yaqq_gen_ds(yaqq_ds_dim, yaqq_ds_type, yaqq_ds_size, None)
-            yaqq_ds_show = Config['mode'+str(yaqq_mode)]['yaqq_ds_show']
-            if yaqq_ds_show == 'Y':
-                if yaqq_ds_dim == 1:
-                    vds.vis_ds_Bloch(yaqq_ds)
+                yaqq_ds_dim = int(Config['mode'+str(yaqq_mode)]['yaqq_ds_dim'])
+                yaqq_ds_type = int(Config['mode'+str(yaqq_mode)]['yaqq_ds_type'])                  
+                if yaqq_ds_dim == 1 and yaqq_ds_type == 4:
+                    yaqq_ds_reso = int(Config['mode'+str(yaqq_mode)]['yaqq_ds_reso'])
+                    yaqq_ds = gds.yaqq_gen_ds(yaqq_ds_dim, yaqq_ds_type, None, yaqq_ds_reso)
+                elif yaqq_ds_dim == 2 and yaqq_ds_type == 4:
+                    yaqq_ds_reso = int(Config['mode'+str(yaqq_mode)]['yaqq_ds_reso'])
+                    yaqq_ds = gds.yaqq_gen_ds(yaqq_ds_dim, yaqq_ds_type, None, yaqq_ds_reso)
                 else:
-                    vds.vis_ds_Weyl(yaqq_ds)
+                    yaqq_ds_size = int(Config['mode'+str(yaqq_mode)]['yaqq_ds_size'])
+                    yaqq_ds = gds.yaqq_gen_ds(yaqq_ds_dim, yaqq_ds_type, yaqq_ds_size, None)
+            if yaqq_ds_dim <= 2:
+                yaqq_ds_show = Config['mode'+str(yaqq_mode)]['yaqq_ds_show']
+                if yaqq_ds_show == 'Y':
+                    if yaqq_ds_dim == 1:
+                        vds.vis_ds_Bloch(yaqq_ds)
+                    elif yaqq_ds_dim == 2:
+                        vds.vis_ds_Weyl(yaqq_ds)
             yaqq_ds_save = Config['mode'+str(yaqq_mode)]['yaqq_ds_save']
             if yaqq_ds_save == 'Y':
                 gds.save_ds(yaqq_ds, Config)
@@ -133,37 +138,43 @@ if __name__ == "__main__":
             print("_____________________________________________________________________")
             exit()
 
-        yaqq_ds_dim = int(input("\n  ===> Enter Data Set Dimension (def.: 2): ") or 2)        
-        if yaqq_ds_dim == 1:
-            print("\n Data Set Types for Dimension = 1:")
-            print("     1. Haar Random 1-qubit pure States")
-            print("     2. Haar Random 2x2 Unitaries")
-            print("     3. Equispaced States on Bloch Sphere using Golden mean")
-            print("     4. Equispaced Angles on Bloch Sphere")
-            print("     5. Stabilizers and Magic States")
-            yaqq_ds_type = int(input("\n  ===> Enter Data Set Type (def.: 3): ") or 3)
-        elif yaqq_ds_dim == 2:
-            print("\n Data Set Types for Dimension = 2:")
-            print("     1. Haar Random 2-qubit pure States")
-            print("     2. Haar Random 4x4 Unitaries")
-            print("     3. Random Non-local Unitaries on Weyl chamber")
-            print("     4. Equispaced Non-local Unitaries on Weyl chamber")
-            yaqq_ds_type = int(input("\n  ===> Enter Data Set Type (def.: 4): ") or 4)
-        else:
-            print("\n Data Set Types for Dimension = 3+:")
-            print("     1. Haar Random n-qubit pure States")
-            print("     2. Haar Random 2^nx2^n Unitaries")
-            yaqq_ds_type = int(input("\n  ===> Enter Data Set Type (def.: 2): ") or 2)
+        yaqq_ds_load = input("\n  ===> Load Data Set from File? [Y/N] (def.: N): ") or 'N'
 
-        if yaqq_ds_dim == 1 and yaqq_ds_type == 4:
-            yaqq_ds_reso = int(input("\n  ===> Enter Bloch Sphere a_rz Spacing (def.: 16, 512 points): ") or 16)
-            yaqq_ds = gds.yaqq_gen_ds(yaqq_ds_dim, yaqq_ds_type, None, yaqq_ds_reso)
-        elif yaqq_ds_dim == 2 and yaqq_ds_type == 4:
-            yaqq_ds_reso = int(input("\n  ===> Enter Weyl Chamber cx Spacing (def.: 23, 508 points): ") or 23)
-            yaqq_ds = gds.yaqq_gen_ds(yaqq_ds_dim, yaqq_ds_type, None, yaqq_ds_reso)
-        elif yaqq_ds_dim == 1 and yaqq_ds_type != 5:
-            yaqq_ds_size = int(input("\n  ===> Enter Data Set Size (def.: 508): ") or 508)
-            yaqq_ds = gds.yaqq_gen_ds(yaqq_ds_dim, yaqq_ds_type, yaqq_ds_size, None)
+        if yaqq_ds_load == 'Y':
+            yaqq_ds_dim, yaqq_ds = gds.load_ds()
+            
+        else: 
+            yaqq_ds_dim = int(input("\n  ===> Enter Data Set Dimension (def.: 2): ") or 2)        
+            if yaqq_ds_dim == 1:
+                print("\n Data Set Types for Dimension = 1:")
+                print("     1. Haar Random 1-qubit pure States")
+                print("     2. Haar Random 2x2 Unitaries")
+                print("     3. Equispaced States on Bloch Sphere using Golden mean")
+                print("     4. Equispaced Angles on Bloch Sphere")
+                print("     5. Stabilizers and Magic States")
+                yaqq_ds_type = int(input("\n  ===> Enter Data Set Type (def.: 3): ") or 3)
+            elif yaqq_ds_dim == 2:
+                print("\n Data Set Types for Dimension = 2:")
+                print("     1. Haar Random 2-qubit pure States")
+                print("     2. Haar Random 4x4 Unitaries")
+                print("     3. Random Non-local Unitaries on Weyl chamber")
+                print("     4. Equispaced Non-local Unitaries on Weyl chamber")
+                yaqq_ds_type = int(input("\n  ===> Enter Data Set Type (def.: 4): ") or 4)
+            else:
+                print("\n Data Set Types for Dimension = 3+:")
+                print("     1. Haar Random n-qubit pure States")
+                print("     2. Haar Random 2^nx2^n Unitaries")
+                yaqq_ds_type = int(input("\n  ===> Enter Data Set Type (def.: 2): ") or 2)
+
+            if yaqq_ds_dim == 1 and yaqq_ds_type == 4:
+                yaqq_ds_reso = int(input("\n  ===> Enter Bloch Sphere a_rz Spacing (def.: 16, 512 points): ") or 16)
+                yaqq_ds = gds.yaqq_gen_ds(yaqq_ds_dim, yaqq_ds_type, None, yaqq_ds_reso)
+            elif yaqq_ds_dim == 2 and yaqq_ds_type == 4:
+                yaqq_ds_reso = int(input("\n  ===> Enter Weyl Chamber cx Spacing (def.: 23, 508 points): ") or 23)
+                yaqq_ds = gds.yaqq_gen_ds(yaqq_ds_dim, yaqq_ds_type, None, yaqq_ds_reso)
+            elif yaqq_ds_dim == 1 and yaqq_ds_type != 5:
+                yaqq_ds_size = int(input("\n  ===> Enter Data Set Size (def.: 508): ") or 508)
+                yaqq_ds = gds.yaqq_gen_ds(yaqq_ds_dim, yaqq_ds_type, yaqq_ds_size, None)
 
         if yaqq_ds_dim <= 2:
             yaqq_ds_show = input("\n  ===> Visualize Data Set? [Y/N] (def.: N): ") or 'N'
