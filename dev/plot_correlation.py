@@ -1,6 +1,33 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import pearsonr
+import re
+import os
+
+dir_res = 'results/data/'
+
+fnames = []
+for (dirpath, dirnames, filenames) in os.walk(dir_res):
+    fnames.extend(filenames)
+
+y_pf_corr = []
+for file in fnames:
+    match = re.search("NUSA_eid-001([1-5])_.*pf1", file) 
+    if match:
+        pf_ht = np.load(dir_res+file)
+        pf_p1p1 = np.load(dir_res+file[:-5]+'2.npy')
+        y_pf_corr.append([int(match.group(1)),pearsonr(pf_ht, pf_p1p1)[0]])
+
+print(y_pf_corr)
+x, y = zip(*y_pf_corr)
+plt.plot(x, y, "_", markersize=4, label = 'correlation PF')
+plt.xticks([1,2,3,4,5],[50,40,30,20,10])
+plt.xlabel('w_npf in [50,w_npf,1,1,0]')
+plt.ylabel('Pearson correlation')
+plt.show()
+
+exit()
+
 plt.rcParams.update(
     {"text.usetex": True, "font.family": "serif", "font.size": 17}
 )
