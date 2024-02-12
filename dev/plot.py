@@ -17,7 +17,8 @@ plt.rcParams.update(
 # expname = 'results/data/NUSA_eid-0009_2024-02-06-13-40'     # 1 qubit 500 pts (for paper)
 # expname = 'results/data/NUSA_eid-0013_2024-02-10-10-55' # 1 qubit 50 pts (for paper) novel
 # gs2_gates = 'P1,P1'
-expname = 'results/data/NUSA_eid-0017_2024-02-12-16-21'     # 2 qubit 10 pts (for paper) F1,F1
+# expname = 'results/data/NUSA_eid-0017_2024-02-12-16-21'     # 2 qubit 10 pts (for paper) F1,F1
+expname = 'results/data/NUSA_eid-0019_2024-02-12-18-50'     # 3 qubit 10 pts (for paper) F1,F1
 gs2_gates = 'P1$^{opt.200}_{\\vec{a}}$,P1$^{opt.200}_{\\vec{b}}$,NL2'
 # expname = 'results/data/NUSA_eid-0003_2024-01-05-22-22'     # 2 qubit 10 pts (bad results)
 # gs2_gates = 'P1,P1,NL2'
