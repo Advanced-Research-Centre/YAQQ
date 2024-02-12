@@ -88,10 +88,8 @@ class NovelUniversalitySearch:
                 case 'H1':      # H1: H (Hadamard) Gate 1-qubit Unitary
                     U = np.array([[1, 1], [1, -1]], dtype=complex) / np.sqrt(2)
                 case 'F1':      # F1: Load 1-qubit Unitary Gate definition from File
-                    # ask user for file name
                     fname = input("\n  ===> Enter Gate Configuration Filename: ")
                     U = np.load(fname, allow_pickle=True)
-                    pass        # TBD Extension
                 case 'R2':      # R2: Haar Random 2-qubit Unitary
                     U = random_unitary(4).data
                 case 'NL2':     # NL2: Non-local 2-qubit Unitary
