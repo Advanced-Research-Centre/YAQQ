@@ -395,8 +395,8 @@ class ResultsPlotSave:
             np.save('results/data/'+exp_id+'cd2', cd2)
             
         if autocfg:
-            plt = Config['result']['yaqq_plt']
-        if plt == 'Y' or autocfg == False:
+            yaqq_plt = Config['result']['yaqq_plt']
+        if yaqq_plt == 'Y' or autocfg == False:
 
             avg_fid_gs01 = np.mean(pf1)
             avg_fid_gs02 = np.mean(pf2)

@@ -15,6 +15,7 @@ from qiskit.quantum_info.synthesis.two_qubit_decompose import TwoQubitWeylDecomp
 import warnings
 from datetime import date
 import configparser
+import json
 
 class NovelUniversalitySearch:
 
@@ -24,7 +25,7 @@ class NovelUniversalitySearch:
     Configure the decomposition methods for 1, 2 and 3+ qubit gates
     """
 
-    def cnfg_dcmp(self, dcmp_gs1, dcmp_gs2):
+    def cnfg_dcmp(self, dcmp_gs1, dcmp_gs2, autocfg, Config = None):
        
         self.d_1q = [dcmp_gs1[0]]             # Decomposition method for 1-qubit gates             [rand, skd]
         self.d_2q = [dcmp_gs1[1]]             # Decomposition method for 2-qubit gates             [rand, cartan]
@@ -34,6 +35,16 @@ class NovelUniversalitySearch:
             self.d_1q.append(dcmp_gs2[0])   # Decomposition method for 1-qubit gates             [rand, skd]
             self.d_2q.append(dcmp_gs2[1])   # Decomposition method for 2-qubit gates             [rand, cartan]
             self.d_nq.append(dcmp_gs2[2])   # Decomposition method for 3 or more qubit gates     [rand, qsd]           
+
+        if autocfg and Config.has_option('experiment', 'skt_param'):
+            self.skt_param = json.loads(Config['experiment']['skt_param'])
+        else:
+            self.skt_param = [3,3]
+
+        if autocfg and Config.has_option('experiment', 'rnd_param'):
+            self.rnd_param = json.loads(Config['experiment']['rnd_param'])
+        else:
+            self.rnd_param = [100,500]
 
         return
       
@@ -78,6 +89,8 @@ class NovelUniversalitySearch:
                     U = np.array([[1, 1], [1, -1]], dtype=complex) / np.sqrt(2)
                 case 'F1':      # F1: Load 1-qubit Unitary Gate definition from File
                     # ask user for file name
+                    fname = input("\n  ===> Enter Gate Configuration Filename: ")
+                    U = np.load(fname, allow_pickle=True)
                     pass        # TBD Extension
                 case 'R2':      # R2: Haar Random 2-qubit Unitary
                     U = random_unitary(4).data
@@ -226,8 +239,10 @@ class NovelUniversalitySearch:
     def dcmp_U_gs(self, U, gs, gsid = 0):
         
         dim = int(np.log2(Choi(U).dim[0]))
-        rand_trials = 100                   # TBD: Adjust based on dimension of unitary
-        rand_max_depth = 500                # TBD: Adjust based on dimension of unitary
+        rand_trials = self.rnd_param[0]
+        rand_max_depth = self.rnd_param[1]
+        skt_recursion_degree = self.skt_param[0]
+        skt_gbs_depth = self.skt_param[1]
 
         if dim > 2 and self.d_nq[gsid] == 1:      # Random n-qubit decomposition
             # Decompose using gates in gs1, no further decompositions required
@@ -313,7 +328,7 @@ class NovelUniversalitySearch:
             pf, cd, qc = self.dcmp_rand(U, gs, trials = rand_trials, max_depth = rand_max_depth)
         elif dim == 1 and self.d_1q[gsid] == 2:   # Solovay-Kitaev decomposition
             gbs = gen_basis_seq()
-            skt_obj = SolovayKitaev(recursion_degree = 3, basic_approximations = gbs.generate_basic_approximations(self.skt_gs(gs)))  # declare SKT object, larger recursion depth increases the accuracy and length of the decomposition
+            skt_obj = SolovayKitaev(recursion_degree = skt_recursion_degree, basic_approximations = gbs.generate_basic_approximations(self.skt_gs(gs),depth=skt_gbs_depth))  # declare SKT object, larger recursion depth increases the accuracy and length of the decomposition
             pf, cd, qc = self.dcmp_skt(U, skt_obj)
 
         return pf, cd, qc

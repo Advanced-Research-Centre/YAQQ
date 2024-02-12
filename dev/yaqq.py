@@ -29,7 +29,7 @@ def yaqq_dev(cfg_fname = None):
     # Least analytical, bad fidelity, fast = [1,1,1] : 'rand','rand','rand' 
     yaqq_cf_dcmp_gs1 = json.loads(Config['experiment']['yaqq_cf_dcmp_gs1'])
     yaqq_cf_dcmp_gs2 = json.loads(Config['experiment']['yaqq_cf_dcmp_gs2'])
-    nsa.cnfg_dcmp(yaqq_cf_dcmp_gs1,yaqq_cf_dcmp_gs2)
+    nsa.cnfg_dcmp(yaqq_cf_dcmp_gs1, yaqq_cf_dcmp_gs2, autocfg, Config)
 
     if yaqq_mode == 1 or yaqq_mode == 2:
         yaqq_ds_load = Config['mode'+str(yaqq_mode)]['yaqq_ds_load']
@@ -123,7 +123,7 @@ def yaqq_manual():
     yaqq_cf_dcmp_gs1.append(int(input("\n  ===> Enter Gate Set 1 Decomposition Method for Dimension = 3+ (def.: 2): ") or 2))
     if yaqq_mode != 3:
         yaqq_cf_dcmp_gs2.append(int(input("\n  ===> Enter Gate Set 2 Decomposition Method for Dimension = 3+ (def.: 2): ") or 2))
-    nsa.cnfg_dcmp(yaqq_cf_dcmp_gs1,yaqq_cf_dcmp_gs2)
+    nsa.cnfg_dcmp(yaqq_cf_dcmp_gs1, yaqq_cf_dcmp_gs2, autocfg)
 
     if yaqq_mode == 3:
         nsa.decompose_u(autocfg)    # Dataset and costfunction selection not required for this mode
