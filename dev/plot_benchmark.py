@@ -5,6 +5,28 @@ plt.rcParams.update(
     {"text.usetex": True, "font.family": "serif", "font.size": 14}
 )
 
+
+data = 'NUSA_eid-0013_2024-02-10-10-55'
+y1, y2, y3 = [], [], []
+for smaller_pojnts in range(2,50+1,1):
+    # pf_ht = np.load(f'results/data/{data}pf1.npy')[smaller_pojnts:500]
+    # pf_ht = np.load(f'results/data/{data}pf1.npy')[smaller_pojnts:500]
+    pf_ht = np.load(f'results/data/{data}pf1.npy')[:smaller_pojnts]
+    pf_p1p1 = np.load(f'results/data/{data}pf2.npy')[:smaller_pojnts]
+    ## ------------------- depth data load --------------------
+    # cd_ht = np.load(f'results/data/{data}cd1.npy')[:smaller_pojnts]
+    # cd_p1p1 = np.load(f'results/data/{data}cd2.npy')[:smaller_pojnts]
+    y3.append(np.mean(pf_ht))
+    y2.append(pearsonr(pf_ht, pf_p1p1)[0])
+y1 = np.load(f'results/data/{data}pf1.npy')
+plt.xlabel('Data set of target unitary')
+plt.ylabel('Pearson correlation')
+plt.plot(y1, 'ob', markersize = 3, alpha = 0.5)
+plt.plot(y3, '-r')
+plt.plot(y2)
+plt.show()
+exit()
+
 how_many_points = 200
 print(how_many_points)
 
