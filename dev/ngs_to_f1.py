@@ -13,7 +13,7 @@ for gid in gs2.keys():
 # g = np.load(fname, allow_pickle=True)
 # print(g)
 
-# results/data/NUSA_eid-0008_2024-02-06-13-00gs1_1H1
-# results/data/NUSA_eid-0008_2024-02-06-13-00gs1_2T1
-# results/data/NUSA_eid-0008_2024-02-06-13-00gs2_1P1
-# results/data/NUSA_eid-0008_2024-02-06-13-00gs2_2P1
+# results/data/NUSA_eid-0008_2024-02-06-13-00gs1_1H1.npy
+# results/data/NUSA_eid-0008_2024-02-06-13-00gs1_2T1.npy
+# results/data/NUSA_eid-0008_2024-02-06-13-00gs2_1P1.npy
+# results/data/NUSA_eid-0008_2024-02-06-13-00gs2_2P1.npy

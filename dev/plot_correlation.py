@@ -17,6 +17,9 @@ for file in fnames:
         pf_ht = np.load(dir_res+file)
         pf_p1p1 = np.load(dir_res+file[:-5]+'2.npy')
         y_pf_corr.append([int(match.group(1)),pearsonr(pf_ht, pf_p1p1)[0]])
+        print(pearsonr(pf_ht, pf_p1p1)[0],file)
+
+exit()
 
 print(y_pf_corr)
 x, y = zip(*y_pf_corr)
