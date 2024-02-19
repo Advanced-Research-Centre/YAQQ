@@ -1,9 +1,30 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import pearsonr
+import re
+import os
+
+# dir_res = 'results/data/'
+
+# fnames = []
+# for (dirpath, dirnames, filenames) in os.walk(dir_res):
+#     fnames.extend(filenames)
+
+# y_pf_corr = []
+# for file in fnames:
+#     match = re.search("NUSA_eid-001([1-5])_.*pf1", file) 
+#     if match:
+#         pf_ht = np.load(dir_res+file)
+#         pf_p1p1 = np.load(dir_res+file[:-5]+'2.npy')
+#         y_pf_corr.append([int(match.group(1)),pearsonr(pf_ht, pf_p1p1)[0]])
+#         print(file,pearsonr(pf_ht, pf_p1p1)[0])
+
+# NUSA_eid-0013_2024-02-10-10-55pf1.npy -0.42662448519333446
+
 plt.rcParams.update(
     {"text.usetex": True, "font.family": "serif", "font.size": 12}
 )
+
 fig, (ax1,ax2) = plt.subplots(2, 1, figsize=(4,4), dpi = 100)
 
 data = 'NUSA_eid-0013_2024-02-10-10-55'

@@ -1,8 +1,12 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import pearsonr
+# plt.rcParams.update(
+#     {"text.usetex": True, "font.family": "serif", "font.size": 14}
+# )
+
 plt.rcParams.update(
-    {"text.usetex": True, "font.family": "serif", "font.size": 14}
+    {"font.family": "serif", "font.size": 18}
 )
 
 
