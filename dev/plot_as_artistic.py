@@ -73,10 +73,10 @@ std_dep_gs02 = np.std(cd2)
 """ Code for plots"""
 
 plt.rcParams.update(
-    {"text.usetex": True, "font.family": "serif", "font.size": 20}
+    {"text.usetex": True, "font.family": "serif", "font.size": 24}
 )
 
-fs = 24
+fs = 32
 ls = 2
 ms = 5
 
@@ -118,7 +118,7 @@ ax[1].legend(loc='lower right')
 
 # figg.set_size_inches(18,8)
 figg.set_size_inches(26,8)
-figg.subplots_adjust(left=0.06, right=0.995, top=0.98, bottom=0.098, wspace=0.183, hspace=0.2)
+figg.subplots_adjust(left=0.06, right=0.995, top=0.98, bottom=0.09, wspace=0.183, hspace=0.2)
 
 plt.savefig('results/figures_for_paper/artistic.pdf')
-# plt.show()
+plt.show()
