@@ -1,21 +1,21 @@
-import numpy as np
-from qiskit import QuantumCircuit
-from qiskit.quantum_info import random_unitary, Choi, process_fidelity, Operator
-from qiskit.extensions import UnitaryGate
-from qiskit.quantum_info.synthesis import qsd
-import random
-from skt import gen_basis_seq, UGate, UdgGate
-from qiskit.transpiler.passes.synthesis import SolovayKitaev
-from tqdm import tqdm
 import time
-import weylchamber
-from scipy.optimize import minimize 
-from qiskit.quantum_info import TwoQubitBasisDecomposer
-from qiskit.quantum_info.synthesis.two_qubit_decompose import TwoQubitWeylDecomposition
-import warnings
-from datetime import date
-import configparser
 import json
+import random
+import warnings
+import numpy as np
+import weylchamber
+import configparser
+from tqdm import tqdm
+from datetime import date
+from scipy.optimize import minimize 
+
+from skt import gen_basis_seq, UGate, UdgGate
+
+from qiskit import QuantumCircuit
+from qiskit.circuit.library import UnitaryGate
+from qiskit.transpiler.passes.synthesis import SolovayKitaev
+from qiskit.quantum_info import random_unitary, Choi, process_fidelity, Operator
+from qiskit.synthesis import TwoQubitWeylDecomposition, TwoQubitBasisDecomposer, qs_decomposition
 
 class NovelUniversalitySearch:
 
@@ -25,8 +25,16 @@ class NovelUniversalitySearch:
     Configure the decomposition methods for 1, 2 and 3+ qubit gates
     """
 
-    def cnfg_dcmp(self, dcmp_gs1, dcmp_gs2, autocfg, Config = None):
+    def cnfg_dcmp(self, autocfg, Config = None, dcmp_gs1 = None, dcmp_gs2 = None):
        
+        if autocfg:
+            dcmp_gs1 = json.loads(Config['experiment']['yaqq_cf_dcmp_gs1'])
+
+        if autocfg and Config.has_option('experiment', 'yaqq_cf_dcmp_gs2'):
+            dcmp_gs2 = json.loads(Config['experiment']['yaqq_cf_dcmp_gs2'])
+        else:
+            dcmp_gs2 = ''
+
         self.d_1q = [dcmp_gs1[0]]             # Decomposition method for 1-qubit gates             [rand, skd]
         self.d_2q = [dcmp_gs1[1]]             # Decomposition method for 2-qubit gates             [rand, cartan]
         self.d_nq = [dcmp_gs1[2]]             # Decomposition method for 3 or more qubit gates     [rand, qsd]
@@ -50,12 +58,13 @@ class NovelUniversalitySearch:
       
     # ------------------------------------------------------------------------------------------------ #
 
-    def def_gs(self, gs_cfg, params = None):
+    def def_gs(self, gs_cfg, params = None, gs_arg = None):
 
         # All params are normalized to [0,1]
         gs = {}
         gno = 0
         param_ctr = 0
+        arg_ctr = 0
         for g in gs_cfg:
             gno += 1
             match g:
@@ -87,9 +96,6 @@ class NovelUniversalitySearch:
                     U = np.array([[1, 0], [0, (1-1j)/np.sqrt(2)]], dtype=complex)
                 case 'H1':      # H1: H (Hadamard) Gate 1-qubit Unitary
                     U = np.array([[1, 1], [1, -1]], dtype=complex) / np.sqrt(2)
-                case 'F1':      # F1: Load 1-qubit Unitary Gate definition from File
-                    fname = input("\n  ===> Enter Gate Configuration Filename: ")
-                    U = np.load(fname, allow_pickle=True)
                 case 'R2':      # R2: Haar Random 2-qubit Unitary
                     U = random_unitary(4).data
                 case 'NL2':     # NL2: Non-local 2-qubit Unitary
@@ -104,9 +110,12 @@ class NovelUniversalitySearch:
                 case 'SPE2':    # SPE2: Special Perfect Entangler 2-qubit Unitary
                     U = weylchamber.canonical_gate(0.5,params[param_ctr],0)
                     param_ctr += 1
-                case 'F2':      # F2: Load 2-qubit Unitary Gate definition from File
-                    # ask user for file name
-                    pass        # TBD Extension
+                case 'F':      # F: Load Unitary Gate definition from File
+                    fname = input("\n  ===> Enter Gate Configuration Filename: ")
+                    U = np.load(fname, allow_pickle=True)
+                case 'A':      # F: Load Unitary Gate definition from arguments
+                    U = gs_arg[arg_ctr]
+                    arg_ctr += 1
                 case _:
                     print("Invalid Gate Set Configuration")
                     exit()
@@ -247,18 +256,23 @@ class NovelUniversalitySearch:
             pf, cd, qc = self.dcmp_rand(U, gs, trials = rand_trials, max_depth = rand_max_depth)
         elif dim > 2 and self.d_nq[gsid] == 2:    # QSD decomposition
             # Need to further decompose both 2-qubit and 1-qubit gates
-            qsd_circ = qsd.qs_decomposition(U.to_matrix())
+            qsd_circ = qs_decomposition(U.to_matrix())
             ds_qsd_1q, ds_qsd_2q = [], []
             for g in qsd_circ:
                 if g.operation.num_qubits == 1:
                     ds_qsd_1q.append(UnitaryGate(Operator(g.operation),label='QSD_1q'))
                 elif g.operation.num_qubits == 2:
-                    ds_qsd_2q.append(UnitaryGate(Operator(g.operation),label='QSD_2q'))
+                    ds_qsd_2q.append(UnitaryGate(Operator(g.operation),label=g.operation.name))
             # Decompose 2 qubits gates in ds_qsd_2q           
             ds_qsd_2q_gs = []
             for U_qsd_2q in ds_qsd_2q:
-                _, _, qcirc_QSD_2q = self.dcmp_U_gs(U_qsd_2q, gs, gsid)
-                ds_qsd_2q_gs.append(qcirc_QSD_2q)
+                if self.d_2q[gsid] != 0:
+                    _, _, qcirc_QSD_2q = self.dcmp_U_gs(U_qsd_2q, gs, gsid)
+                    ds_qsd_2q_gs.append(qcirc_QSD_2q)
+                else:
+                    qc_no2q = QuantumCircuit(2)
+                    qc_no2q.append(U_qsd_2q,[0,1])
+                    ds_qsd_2q_gs.append(qc_no2q)
             # Decompose 1 qubit gates in ds_qsd_1q
             ds_qsd_1q_gs = []
             for U_qsd_1q in ds_qsd_1q:
@@ -292,7 +306,10 @@ class NovelUniversalitySearch:
             bg = self.kak_gs(gs)
             # warnings.filterwarnings("ignore", category=UserWarning) # Ignore warning of non-perfect decomposition for non-supercontrolled gates
             kak_obj = TwoQubitBasisDecomposer(bg)
-            ds_kak_1q = kak_obj.decomp3_supercontrolled(TwoQubitWeylDecomposition(U))
+            # a = TwoQubitWeylDecomposition(U)
+            # print(U)
+            # print(a)
+            ds_kak_1q = kak_obj.decomp3_supercontrolled(TwoQubitWeylDecomposition(U))  # TBD: Breaking in new Qiskit v1.2.4
             # Decompose 1 qubit gates in ds_kak_1q
             ds_kak_1q_gs = []
             for U_kak_1q in ds_kak_1q:
@@ -333,20 +350,58 @@ class NovelUniversalitySearch:
 
     # ------------------------------------------------------------------------------------------------ #
 
+    def gqud_config(self, Config, gs_arg = None):
+        """
+        This method is only for autocfg mode
+        """
+        yaqq_cf_ngs = Config['mode3']['yaqq_cf_ngs'].split(',')
+        self.gqud_gs, self.gqud_gs_gates = self.def_gs(yaqq_cf_ngs, gs_arg=gs_arg) 
+        self.gqud_cfg = Config  
+        return
+
+    def gqud_decompose(self, np_U = None):
+        """
+        This method is only for autocfg mode
+        """
+        if self.gqud_cfg['mode3']['u_type'] == 'arg' and np_U != None:
+            pass   
+        elif self.gqud_cfg['mode3']['u_type'] == 'file':
+            U_fname = Config['mode3']['u_fname']
+            np_U = np.load('results/data/'+U_fname+'.npy', allow_pickle=True)
+        else:
+            print("Invalid configuration")
+        U = UnitaryGate(np_U,label='UsrU')
+
+        # Decompose Unitary into Gate Set
+        pf, cd, qc = self.dcmp_U_gs(U, self.gqud_gs, gsid = 0)
+        if self.gqud_cfg['mode3']['show_res'] == 'Y':
+            print("\nProcess Fidelity:",pf)
+            print("Circuit Depth: ", cd)
+
+        if self.gqud_cfg['mode3']['show_qc'] == 'Y':
+            print(qc)     
+        if self.gqud_cfg['mode3']['save_qc'] == 'Y':
+            qc_fname = self.gqud_cfg['mode3']['qc_fname']
+            with open('results/data/'+qc_fname+'.txt', 'w') as f:
+                for i in qc:
+                    f.write(i.operation.label+' '+str(i.qubits[0].index)+'\n')      
+        return qc
+
     def decompose_u(self, autocfg, Config = None):
 
         # Define Unitary to decompose here
         if autocfg:
-            yaqq_ds_dim = int(Config['mode3']['yaqq_ds_dim'])
             if Config['mode3']['u_type'] == 'file':
                 U_fname = Config['mode3']['u_fname']
                 np_U = np.load('results/data/'+U_fname+'.npy', allow_pickle=True)
-                if np_U.shape[0] != 2**yaqq_ds_dim:
-                    print("Invalid Unitary Dimension")
-                    exit()
+                # Note: Error check restricts reusing same config for multiple unitaries
+                # if np_U.shape[0] != 2**yaqq_ds_dim:
+                #     print("Invalid Unitary Dimension")
+                #     exit()
                 U = UnitaryGate(np_U,label='UsrU')
             else:
-                print("Generating Haar random unitary of given dimension") 
+                yaqq_ds_dim = int(Config['mode3']['yaqq_ds_dim'])
+                print("Generating Haar random unitary of dimension",yaqq_ds_dim) 
                 np_U = np.array(random_unitary(2**yaqq_ds_dim))
                 print(np_U)
                 if Config['mode3']['u_save'] == 'Y':
@@ -354,17 +409,17 @@ class NovelUniversalitySearch:
                     np.save('results/data/'+U_fname+'.npy',np_U)
                 U = UnitaryGate(np_U,label='RndU')
         else:
-            yaqq_ds_dim = int(input("\n  ===> Enter Data Set Dimension (def.: 1): ") or 1)        
             load_U = input("\n  ===> Load Unitary to Decompose from File? [Y/N] (def.: N): ") or 'N'
             if load_U == 'Y':
                 U_fname = input("\n  ===> Enter filename (def.: <enter>): ") or 'dcmp_U'
                 np_U = np.load('results/data/'+U_fname+'.npy', allow_pickle=True)
-                if np_U.shape[0] != 2**yaqq_ds_dim:
-                    print("Invalid Unitary Dimension")
-                    exit()
+                # if np_U.shape[0] != 2**yaqq_ds_dim:
+                #     print("Invalid Unitary Dimension")
+                #     exit()
                 U = UnitaryGate(np_U,label='UsrU')
             else:
-                print("Generating Haar random unitary of given dimension") 
+                yaqq_ds_dim = int(input("\n  ===> Enter Data Set Dimension (def.: 1): ") or 1)        
+                print("Generating Haar random unitary of dimension",yaqq_ds_dim) 
                 np_U = np.array(random_unitary(2**yaqq_ds_dim))
                 print(np_U)
                 save_U = input("\n  ===> Save Generated Unitary? [Y/N] (def.: N): ") or 'N'
@@ -377,7 +432,7 @@ class NovelUniversalitySearch:
         if autocfg:
             yaqq_cf_ngs = Config['mode3']['yaqq_cf_ngs'].split(',')
         else:
-            print("\n Gate Set Composition:")                   # TBD: Currently only constant gates allowed
+            print("\n Gate Set Composition:")                   # Only constant gates allowed in this mode
             print("   X1: X (Pauli-X) Gate 1-qubit Unitary")  
             print("   Y1: Y (Pauli-Y) Gate 1-qubit Unitary")  
             print("   Z1: Z (Pauli-Z) Gate 1-qubit Unitary")  

@@ -1,16 +1,17 @@
-from qiskit import QuantumCircuit
-from qiskit.quantum_info import random_statevector, random_unitary, Operator, Statevector
-from qiskit.extensions import UnitaryGate
-import random
 import math
-from astropy.coordinates import cartesian_to_spherical
-import weylchamber
+import random
 import numpy as np
-from itertools import product
+import weylchamber
 import qutip as qt
-from qutip.measurement import measurement_statistics
-import matplotlib.pyplot as plt
 from datetime import datetime
+from itertools import product
+import matplotlib.pyplot as plt
+from qutip.measurement import measurement_statistics
+from astropy.coordinates import cartesian_to_spherical
+
+from qiskit import QuantumCircuit
+from qiskit.circuit.library import UnitaryGate
+from qiskit.quantum_info import random_statevector, random_unitary, Operator, Statevector
 
 class GenerateDataSet:
 
