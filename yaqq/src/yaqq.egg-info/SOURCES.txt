@@ -2,6 +2,7 @@ COPYING
 README.md
 setup.py
 src/__init__.py
+src/kak.py
 src/skt.py
 src/yaqq.py
 src/yaqq_ds.py

@@ -4,19 +4,57 @@
 [![PyPI version](https://badge.fury.io/py/yaqq.svg)](https://badge.fury.io/py/yaqq)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5738685.svg)](https://doi.org/10.5281/zenodo.5738685)
 
-The YAQQ (Yaqq Another Quantum Quantizer) is an agent that searches for novel quantum gate sets. Given a gate set, it can find a complementary gate that performs better for a particular set of unitary transformations than the original gate set. It is possible theoretically because (a) there are an infinite number of ways of creating universal quantum computing gate sets - the ubiquity of quantum universality, (b) for each discrete gate set, there are certain quantum states that are easy to express, but many other quantum states which are exponentially costly - universal distribution for quantum automata. The cost, or the performance of a gate set, considers the fidelity when the gate set is used to decompose the target set of quantum transformations and the circuit complexity of the decomposition.
+The standard model of quantum computation is based on quantum circuits, where the number and quality of the quantum gates composing the circuit influence the runtime and fidelity of the computation. The fidelity of the decomposition of quantum algorithms, represented as unitary matrices, to bounded depth quantum circuits depends strongly on the set of gates available for the decomposition routine. To investigate this dependence, we explore the design space of discrete quantum gate sets and present a software tool for comparative analysis of quantum processing units and control protocols based on their native gates. The evaluation is conditioned on a set of unitary transformations representing target use cases on the quantum processors. The cost function considers three key factors: (i) the statistical distribution of the decomposed circuits' depth, (ii) the statistical distribution of process fidelities for the approximate decomposition, and (iii) the relative novelty of a gate set compared to other gate sets in terms of the aforementioned properties. The developed software, called YAQQ (Yet Another Quantum Quantizer), enables the discovery of an optimized set of quantum gates through this tunable joint cost function. To identify these gate sets, we use the novelty search algorithm, circuit decomposition techniques (like Solovay-Kitaev, Cartan, and quantum Shannon decomposition), and stochastic optimization to implement YAQQ within the Qiskit quantum simulator environment. YAQQ exploits reachability tradeoffs conceptually derived from quantum algorithmic information theory. Our results demonstrate the pragmatic application of identifying gate sets that are advantageous to popularly used quantum gate sets in representing quantum algorithms. Consequently, we demonstrate pragmatic use cases of YAQQ in comparing transversal logical gate sets in quantum error correction codes, designing optimal quantum instruction sets, and compiling to specific quantum processors.
+
+### Citation:
+If you find the repository useful, please consider citing:
+
+```
+@misc{YAQQ,
+  author={Sarkar, Aritra and Kundu, Akash},
+  title={YAQQ: Yet Another Quantum Quantizer},
+  howpublished={\url{[https://github.com/Advanced-Research-Centre/YAQQ](https://github.com/Advanced-Research-Centre/YAQQ)}},
+  year={2023}
+}
+```
+
+or our article:
+```
+@article{sarkar2024yaqq,
+  title={YAQQ: Yet Another Quantum Quantizer - Design Space Exploration of Quantum Gate Sets using Novelty Search},
+  author={Sarkar, Aritra and Kundu, Akash and Steinberg, Matthew and Mishra, Sibasish and Fauquenot, Sebastiaan and Acharya, Tamal and Miszczak, Jaros{\l}aw A and Feld, Sebastian},
+  journal={arXiv preprint arXiv:2406.17610},
+  year={2024}
+}
+```
+
 
 ### How to use:
 
+#### User version:
+
+1. `pip install --upgrade yaqq`
+2. In a Python program, 
+```
+import yaqq
+```
+##### Manual mode
+```
+qq = yaqq()
+qq.yaqq_manual()
+```
+##### API mode
+```
+qq = yaqq(<CONFIG_FPATH>)
+qq.yaqq_cfg(<CONFIG_FNAME>)
+```
+
 #### Developer version:
-1. Install dependencies ("numpy >= 1.23.5", "qiskit >= 0.43.3", "astropy >= 5.3.1", "matplotlib >= 3.7.2", "scipy >= 1.11.1", "tqdm >= 4.65.0", "qutip >= 4.7.2", "scikit-learn >= 1.3.0", "weylchamber >= 0.4.0")
+1. Install dependencies listed in `requirements.txt`
 2. Navigate to `dev` folder
 3. `>> python yaqq.py`
 
-#### YAQQ package:
-1. `pip install --upgrade yaqq`
-2. In a Python program, `import yaqq`
-3. `yaqq.run()`
+
 
 ### Usage modes (to be updated):
 
@@ -214,14 +252,4 @@ Feel free to report issues during build or execution. We also welcome suggestion
 - [ ] Bloch sphere states using hierarchical hex mesh (e.g. [H3: Uber's Hexagonal Hierarchical Spatial Index](https://github.com/uber/h3)) (stall: focus more on n-qubit data sets)
 - [ ] Plot fidelity/depth difference with colour on Bloch sphere like VQCP L/T topology (stall: focus more on n-qubit data sets)
 
-### Citation:
-If you find the repository useful, please consider citing:
 
-```
-@misc{YAQQ,
-  author={Sarkar, Aritra and Kundu, Akash},
-  title={YAQQ: Yet Another Quantum Quantizer},
-  howpublished={\url{[https://github.com/Advanced-Research-Centre/YAQQ](https://github.com/Advanced-Research-Centre/YAQQ)}},
-  year={2023}
-}
-```

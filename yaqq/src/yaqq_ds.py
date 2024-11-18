@@ -1,19 +1,35 @@
-from qiskit import QuantumCircuit
-from qiskit.quantum_info import random_statevector, random_unitary, Operator, Statevector
-from qiskit.extensions import UnitaryGate
-import random
 import math
-from astropy.coordinates import cartesian_to_spherical
-import weylchamber
+import random
 import numpy as np
-from itertools import product
+import weylchamber
 import qutip as qt
-from qutip.measurement import measurement_statistics
-import matplotlib.pyplot as plt
 from datetime import datetime
+from itertools import product
+import matplotlib.pyplot as plt
+from qutip.measurement import measurement_statistics
+from astropy.coordinates import cartesian_to_spherical
+
+from qiskit import QuantumCircuit
+from qiskit.circuit.library import UnitaryGate
+from qiskit.quantum_info import random_statevector, random_unitary, Operator, Statevector
 
 class GenerateDataSet:
 
+    # ------------------------------------------------------------------------------------------------ #
+
+    def load_ds(self, autocfg, Config = None):
+
+        if autocfg:  
+            ds_fname = Config['mode1']['yaqq_ds_fname']
+        else:
+            ds_fname = input("\n  ===> Enter Dataset Filename (e.g.: NUSA_eid-0010_2024-02-09-11-26ds): " or 'NUSA_eid-0010_2024-02-09-11-26ds')
+        ds = np.load('results/data/'+ds_fname+'.npy', allow_pickle=True)
+        ds_dim = len(ds[0].to_matrix())
+        ds_size = len(ds)
+        print("\n  ===> YAQQ Data Set Loaded = "+str(ds_dim)+", Size = "+str(ds_size))
+
+        return ds_dim, ds
+    
     # ------------------------------------------------------------------------------------------------ #
 
     def yaqq_gen_ds(self, ds_dim, ds_type, ds_size, ds_reso):
@@ -257,6 +273,15 @@ class GenerateDataSet:
     
     # ------------------------------------------------------------------------------------------------ #
 
+    def save_ds(self, yaqq_ds, Config = None):
+             
+        now = datetime.now()
+        exp_id = Config['general']['exp_name']+'_eid-'+Config['general']['exp_id']+'_'+now.strftime("%Y-%m-%d-%H-%M")
+        np.save('results/data/'+exp_id+'ds', yaqq_ds)
+        return
+
+    # ------------------------------------------------------------------------------------------------ #
+
 class VisualizeDataSet:
 
     # ------------------------------------------------------------------------------------------------ #
@@ -358,59 +383,69 @@ class ResultsPlotSave:
 
     def plot_compare_gs(self, gs1, gs1_gates, pf1, cd1, gs2, gs2_gates, pf2, cd2, pfivt, autocfg, Config = None):
         
-        avg_fid_gs01 = np.mean(pf1)
-        avg_fid_gs02 = np.mean(pf2)
-        avg_dep_gs01 = np.mean(cd1)
-        avg_dep_gs02 = np.mean(cd2) 
-        
-        ivt_fid_gs01 = np.subtract(1,pf1)
-
-        _, ax = plt.subplots(1, 2)
-        ax[0].plot(pf1, '-x', color = 'r', label = 'PF ['+gs1_gates+']')
-        ax[0].plot(pf2, '-o', color = 'b', label = 'PF ['+gs2_gates+']')
-        if pfivt:
-            ax[0].plot(ivt_fid_gs01, ':', color = 'g', label = 'target PF trend')
-
-        ax[0].axhline(y=avg_fid_gs01, linestyle='-.', color = 'r' , label = 'avg.PF ['+gs1_gates+']')
-        ax[0].axhline(y=avg_fid_gs02, linestyle='-.', color = 'b' , label = 'avg.PF ['+gs2_gates+']')
-
-        ax[1].plot(cd1, '-x', color = 'r', label = 'CD ['+gs1_gates+']')
-        ax[1].plot(cd2, '-o', color = 'b', label = 'CD ['+gs2_gates+']')
-
-        ax[1].axhline(y=avg_dep_gs01, linestyle='-.', color = 'r', label = 'avg.CD ['+gs1_gates+']')
-        ax[1].axhline(y=avg_dep_gs02, linestyle='-.', color = 'b', label = 'avg.CD ['+gs2_gates+']')
-
-        ax[0].set_ylabel("Process Fidelity")
-        ax[1].set_ylabel("Circuit Depth")
-        ax[0].set_ylim(bottom=0,top=1)
-        ax[1].set_ylim(bottom=0,top=None)
-        ax[0].legend()
-        ax[1].legend()
-        # _, ax = plt.subplots(1, 2, figsize = (7,3.5), sharex=True, layout="constrained")
-        # ax[0].set_xlabel("Equidistant Points")
-        # ax[1].set_xlabel("Equidistant Points")
-        # plt.legend(ncol = 2, bbox_to_anchor = (1, 1.13))
-
         if autocfg:
-            save_res = Config['result']['yaqq_plt_save']
+            save_res = Config['result']['yaqq_res_save']
             now = datetime.now()
             exp_id = Config['general']['exp_name']+'_eid-'+Config['general']['exp_id']+'_'+now.strftime("%Y-%m-%d-%H-%M")
-        else:
-            save_res = input("Save plots and data? [Y/N] (def.: N): ") or 'N'
-            if save_res == 'Y':
-                exp_id = input("Enter experiment ID: ") or 'exp_1'
-        
-        if save_res == 'Y':
-            plt.savefig('results/figures/'+exp_id+'.pdf')
-            plt.savefig('results/figures/'+exp_id+'.png')      
+        if save_res == 'Y' or autocfg == False:        
             np.save('results/data/'+exp_id+'gs1', gs1)
             np.save('results/data/'+exp_id+'pf1', pf1)
             np.save('results/data/'+exp_id+'cd1', cd1)
             np.save('results/data/'+exp_id+'gs2', gs2)
             np.save('results/data/'+exp_id+'pf2', pf2)
             np.save('results/data/'+exp_id+'cd2', cd2)
+            
+        if autocfg:
+            yaqq_plt = Config['result']['yaqq_plt']
+        if yaqq_plt == 'Y' or autocfg == False:
 
-        plt.show()
+            avg_fid_gs01 = np.mean(pf1)
+            avg_fid_gs02 = np.mean(pf2)
+            avg_dep_gs01 = np.mean(cd1)
+            avg_dep_gs02 = np.mean(cd2) 
+            
+            ivt_fid_gs01 = np.subtract(1,pf1)
+
+            _, ax = plt.subplots(1, 2)
+            ax[0].plot(pf1, '-x', color = 'r', label = 'PF ['+gs1_gates+']')
+            ax[0].plot(pf2, '-o', color = 'b', label = 'PF ['+gs2_gates+']')
+            if pfivt:
+                ax[0].plot(ivt_fid_gs01, ':', color = 'g', label = 'target PF trend')
+
+            ax[0].axhline(y=avg_fid_gs01, linestyle='-.', color = 'r' , label = 'avg.PF ['+gs1_gates+']')
+            ax[0].axhline(y=avg_fid_gs02, linestyle='-.', color = 'b' , label = 'avg.PF ['+gs2_gates+']')
+
+            ax[1].plot(cd1, '-x', color = 'r', label = 'CD ['+gs1_gates+']')
+            ax[1].plot(cd2, '-o', color = 'b', label = 'CD ['+gs2_gates+']')
+
+            ax[1].axhline(y=avg_dep_gs01, linestyle='-.', color = 'r', label = 'avg.CD ['+gs1_gates+']')
+            ax[1].axhline(y=avg_dep_gs02, linestyle='-.', color = 'b', label = 'avg.CD ['+gs2_gates+']')
+
+            ax[0].set_ylabel("Process Fidelity")
+            ax[1].set_ylabel("Circuit Depth")
+            ax[0].set_ylim(bottom=0,top=1)
+            ax[1].set_ylim(bottom=0,top=None)
+            ax[0].legend()
+            ax[1].legend()
+            # _, ax = plt.subplots(1, 2, figsize = (7,3.5), sharex=True, layout="constrained")
+            # ax[0].set_xlabel("Equidistant Points")
+            # ax[1].set_xlabel("Equidistant Points")
+            # plt.legend(ncol = 2, bbox_to_anchor = (1, 1.13))
+
+            if autocfg:
+                save_plt = Config['result']['yaqq_plt_save']
+                now = datetime.now()
+                exp_id = Config['general']['exp_name']+'_eid-'+Config['general']['exp_id']+'_'+now.strftime("%Y-%m-%d-%H-%M")
+            else:
+                save_plt = input("Save plots and data? [Y/N] (def.: N): ") or 'N'
+                if save_plt == 'Y':
+                    exp_id = input("Enter experiment ID: ") or 'exp_1'
+        
+            if save_plt == 'Y':
+                plt.savefig('results/figures/'+exp_id+'.pdf')
+                plt.savefig('results/figures/'+exp_id+'.png')  
+
+            plt.show()
 
         # ------------------------------------------------------------------------------------------------ #
 

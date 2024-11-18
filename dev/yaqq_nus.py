@@ -10,6 +10,7 @@ from datetime import date
 from scipy.optimize import minimize 
 
 from skt import gen_basis_seq, UGate, UdgGate
+from kak import kak
 
 from qiskit import QuantumCircuit
 from qiskit.circuit.library import UnitaryGate
@@ -250,7 +251,7 @@ class NovelUniversalitySearch:
         rand_max_depth = self.rnd_param[1]
         skt_recursion_degree = self.skt_param[0]
         skt_gbs_depth = self.skt_param[1]
-
+        
         if dim > 2 and self.d_nq[gsid] == 1:      # Random n-qubit decomposition
             # Decompose using gates in gs1, no further decompositions required
             pf, cd, qc = self.dcmp_rand(U, gs, trials = rand_trials, max_depth = rand_max_depth)
@@ -262,17 +263,12 @@ class NovelUniversalitySearch:
                 if g.operation.num_qubits == 1:
                     ds_qsd_1q.append(UnitaryGate(Operator(g.operation),label='QSD_1q'))
                 elif g.operation.num_qubits == 2:
-                    ds_qsd_2q.append(UnitaryGate(Operator(g.operation),label=g.operation.name))
+                    ds_qsd_2q.append(UnitaryGate(Operator(g.operation),label='QSD_2q'))
             # Decompose 2 qubits gates in ds_qsd_2q           
             ds_qsd_2q_gs = []
             for U_qsd_2q in ds_qsd_2q:
-                if self.d_2q[gsid] != 0:
-                    _, _, qcirc_QSD_2q = self.dcmp_U_gs(U_qsd_2q, gs, gsid)
-                    ds_qsd_2q_gs.append(qcirc_QSD_2q)
-                else:
-                    qc_no2q = QuantumCircuit(2)
-                    qc_no2q.append(U_qsd_2q,[0,1])
-                    ds_qsd_2q_gs.append(qc_no2q)
+                _, _, qcirc_QSD_2q = self.dcmp_U_gs(U_qsd_2q, gs, gsid)
+                ds_qsd_2q_gs.append(qcirc_QSD_2q)
             # Decompose 1 qubit gates in ds_qsd_1q
             ds_qsd_1q_gs = []
             for U_qsd_1q in ds_qsd_1q:
@@ -291,7 +287,7 @@ class NovelUniversalitySearch:
                     tgt = [qsd_circ.find_bit(x).index for x in g.qubits]
                     for g_gs in U_gs:
                         if len(g_gs.qubits) == 1:
-                            qc.append(g_gs.operation, [tgt[g_gs.qubits[0].index]])
+                            qc.append(g_gs.operation, [tgt[g_gs.qubits[0]._index]])
                         elif len(g_gs.qubits) == 2:
                             qc.append(g_gs.operation, tgt)
                 qc.barrier()
@@ -305,11 +301,10 @@ class NovelUniversalitySearch:
             # Analytically decompose using CAN 2-qubit gates in gs1, need to further decompose 1-qubit gates
             bg = self.kak_gs(gs)
             # warnings.filterwarnings("ignore", category=UserWarning) # Ignore warning of non-perfect decomposition for non-supercontrolled gates
-            kak_obj = TwoQubitBasisDecomposer(bg)
-            # a = TwoQubitWeylDecomposition(U)
-            # print(U)
-            # print(a)
-            ds_kak_1q = kak_obj.decomp3_supercontrolled(TwoQubitWeylDecomposition(U))  # TBD: Breaking in new Qiskit v1.2.4
+            # kak_obj = TwoQubitBasisDecomposer(bg)
+            kak_obj = kak(bg)
+            # ds_kak_1q = kak_obj.decomp3_supercontrolled(TwoQubitWeylDecomposition(U))  # Breaking in new Qiskit v1.2.4
+            ds_kak_1q = kak_obj.decomp3_supercontrolled(TwoQubitWeylDecomposition(U))
             # Decompose 1 qubit gates in ds_kak_1q
             ds_kak_1q_gs = []
             for U_kak_1q in ds_kak_1q:
@@ -363,7 +358,7 @@ class NovelUniversalitySearch:
         """
         This method is only for autocfg mode
         """
-        if self.gqud_cfg['mode3']['u_type'] == 'arg' and np_U != None:
+        if self.gqud_cfg['mode3']['u_type'] == 'arg' and np_U.any():
             pass   
         elif self.gqud_cfg['mode3']['u_type'] == 'file':
             U_fname = Config['mode3']['u_fname']

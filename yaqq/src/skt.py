@@ -1,28 +1,23 @@
 from __future__ import annotations
+import math
 import warnings
 import collections
 import numpy as np
-import qiskit.circuit.library.standard_gates as gates
-from qiskit.circuit import Gate
-from qiskit.quantum_info.operators.predicates import matrix_equal
-from qiskit.synthesis.discrete_basis.gate_sequence import GateSequence
-import numpy as np
-from qiskit.transpiler.passes.synthesis import SolovayKitaev
-from qiskit.quantum_info import process_fidelity, Choi
-from astropy.coordinates import cartesian_to_spherical
-from qiskit import QuantumCircuit
-import matplotlib.pyplot as plt
-import math
-from qiskit.extensions import UnitaryGate, U3Gate
-from qiskit.circuit import Gate
-from qiskit.quantum_info import random_unitary
-import scipy.linalg as la
-from qiskit.circuit.gate import Gate
 from tqdm import tqdm
-from scipy.optimize import minimize 
-
+import scipy.linalg as la
+import matplotlib.pyplot as plt
 from typing import Optional, Union
-from qiskit.circuit.controlledgate import ControlledGate
+from scipy.optimize import minimize 
+from astropy.coordinates import cartesian_to_spherical
+
+from qiskit.circuit import Gate
+from qiskit import QuantumCircuit
+from qiskit.circuit.gate import Gate
+import qiskit.circuit.library.standard_gates as gates
+from qiskit.circuit.library import UnitaryGate, U3Gate
+from qiskit.transpiler.passes.synthesis import SolovayKitaev
+from qiskit.synthesis.discrete_basis.gate_sequence import GateSequence
+from qiskit.quantum_info import random_unitary, process_fidelity, Choi
 
 class UGate(Gate):
     U = np.identity(2)

@@ -21,8 +21,9 @@ pip install --upgrade yaqq
 """
 
 # Step 4: run YAQQ package from pypi
-import yaqq
-yaqq.run()
+from yaqq import yaqq
+qq = yaqq()
+qq.yaqq_manual()
 
 # Step 5: execute code
 """
