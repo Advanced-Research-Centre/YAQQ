@@ -358,7 +358,7 @@ class NovelUniversalitySearch:
         """
         This method is only for autocfg mode
         """
-        if self.gqud_cfg['mode3']['u_type'] == 'arg' and np_U.any():
+        if self.gqud_cfg['mode3']['u_type'] == 'arg' and np_U is not None:
             pass   
         elif self.gqud_cfg['mode3']['u_type'] == 'file':
             U_fname = Config['mode3']['u_fname']
