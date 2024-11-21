@@ -14,22 +14,24 @@ class yaqq:
         self.nsa = NovelUniversalitySearch()
         self.rps = ResultsPlotSave()    
         if cfg_path == None:
-            self.cfg_path = "configs/"
+            self.cfg_path = ""
         else:
             self.cfg_path = cfg_path
         return
 
     ########################################################################################################################################################################################################
 
-    def yaqq_cfg(self, cfg_fname = None, gs_arg = None):
+    def yaqq_cfg(self, cfg = None, gs_arg = None):
         # print("YAQQ-dev version date stamp 2024-11-15")
 
         autocfg = True
-
-        Config = configparser.ConfigParser()
-        if cfg_fname == None:
-            cfg_fname = input("\n  ===> Enter Configuration Filename (e.g.: NUSA_eid-0006): ")
-        Config.read(self.cfg_path+cfg_fname+".cfg")
+        config = configparser.ConfigParser()
+        if type(cfg) is dict:
+            config.read_dict(configuration)
+        
+        elif cfg == None:
+            cfg = input("\n  ===> Enter Configuration Filename (e.g.: NUSA_eid-0006): ")
+            Config.read(self.cfg_path+cfg+".cfg")
         
         yaqq_mode = int(Config['experiment']['yaqq_mode'])
 
