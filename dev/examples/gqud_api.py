@@ -16,7 +16,7 @@ u_1q = random_unitary(2)
 u_2q = random_unitary(4)
 u_3q = random_unitary(8)
 
-qq = yaqq('../configs/')
+qq = yaqq()
 
 'Test 1: Load gate from file'
 

@@ -8,30 +8,28 @@ import numpy as np
 
 class yaqq:
 
-    def __init__(self, cfg_path = None):
+    def __init__(self):
         self.gds = GenerateDataSet()
         self.vds = VisualizeDataSet()
         self.nsa = NovelUniversalitySearch()
-        self.rps = ResultsPlotSave()    
-        if cfg_path == None:
-            self.cfg_path = ""
-        else:
-            self.cfg_path = cfg_path
+        self.rps = ResultsPlotSave() 
         return
 
     ########################################################################################################################################################################################################
 
     def yaqq_cfg(self, cfg = None, gs_arg = None):
-        # print("YAQQ-dev version date stamp 2024-11-15")
+        # print("YAQQ-dev version date stamp 2024-11-21")
 
         autocfg = True
-        config = configparser.ConfigParser()
-        if type(cfg) is dict:
-            config.read_dict(configuration)
         
-        elif cfg == None:
-            cfg = input("\n  ===> Enter Configuration Filename (e.g.: NUSA_eid-0006): ")
-            Config.read(self.cfg_path+cfg+".cfg")
+        Config = configparser.ConfigParser()
+        if type(cfg) is dict:
+            Config.read_dict(cfg)
+        elif type(cfg) is str:
+            Config.read(cfg)
+        elif cfg is None:
+            cfg = input("\n  ===> Enter Configuration Filename (e.g.: NUSA_eid-0006.cfg): ")
+            Config.read(cfg)
         
         yaqq_mode = int(Config['experiment']['yaqq_mode'])
 
