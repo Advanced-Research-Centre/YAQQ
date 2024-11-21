@@ -36,7 +36,7 @@ or our article:
 1. `pip install --upgrade yaqq`
 2. In a Python program, 
 ```
-import yaqq
+from yaqq import yaqq
 ```
 ##### Manual mode
 ```
@@ -45,8 +45,8 @@ qq.yaqq_manual()
 ```
 ##### API mode
 ```
-qq = yaqq(<CONFIG_FPATH>)
-qq.yaqq_cfg(<CONFIG_FNAME>)
+qq = yaqq()
+qq.yaqq_cfg(<CONFIG_FPATH_FNAME>)
 ```
 
 #### Developer version:
