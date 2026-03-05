@@ -356,10 +356,11 @@ class VisualizeDataSet:
         ax.xaxis.set_ticks([0, 0.25, 0.5, 0.75, 1])
         ax.yaxis.set_ticks([0, 0.25, 0.5, 0.75, 1])
         ax.zaxis.set_ticks([0, 0.25, 0.5, 0.75, 1])
-        ax.set_xlabel('$c_1/\pi$')
-        ax.set_ylabel('$c_2/\pi$')
+        # ax.set_xlabel('$c_1/\pi$')
+        ax.set_xlabel('$c_1/pi$')
+        ax.set_ylabel('$c_2/pi$')
         ax.zaxis.set_rotate_label(False) 
-        ax.set_zlabel('$c_3/\pi$', rotation=90)
+        ax.set_zlabel('$c_3/pi$', rotation=90)
         # ax.grid(False)
         ax.xaxis.pane.fill = False
         ax.yaxis.pane.fill = False
